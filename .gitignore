@@ -1,0 +1,4 @@
+.idea
+.env
+app/intenal/database/config.yml
+app/intenal/telegram/config.yml
