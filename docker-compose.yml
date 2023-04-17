@@ -2,4 +2,16 @@ version: '3.9'
 services:
   tgbot:
     build: .
-  
+    container_name: telegram_bot
+    restart: always
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: islam20011
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+volumes:
+  postgres_data:

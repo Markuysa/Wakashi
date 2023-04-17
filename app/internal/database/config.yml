@@ -1,0 +1,6 @@
+database:
+  host: postgres
+  port: 5432
+  user: postgres
+  driver: postgres
+  sslMode: disabled

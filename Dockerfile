@@ -13,6 +13,6 @@ FROM alpine
 
 WORKDIR /app
 
-COPY --from=builder main .
+COPY --from=builder /app .
 
 CMD ["/app/main"]

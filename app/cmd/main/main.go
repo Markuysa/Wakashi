@@ -3,28 +3,48 @@ package main
 import (
 	"context"
 	"log"
-	"tgBotIntern/app/intenal/telegram/client"
-	telegramConfig "tgBotIntern/app/intenal/telegram/config"
-	"tgBotIntern/app/intenal/telegram/handlers"
-	"tgBotIntern/app/intenal/worker"
+	"tgBotIntern/app/internal/database"
+	"tgBotIntern/app/internal/database/config"
+	usersService2 "tgBotIntern/app/internal/services/usersService"
+	"tgBotIntern/app/internal/telegram/bot"
+	telegramConfig "tgBotIntern/app/internal/telegram/config"
+	"tgBotIntern/app/internal/telegram/controllers"
+	"tgBotIntern/app/internal/telegram/worker"
 )
 
 func main() {
 	ctx := context.Background()
+	// It's better to use sessions than context injection
+	// TODO - replace withValue with session of currentUser
+	ctx = context.WithValue(ctx, "ROLE", -1)
 	tgConfig, err := telegramConfig.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-	tgClient, err := client.New(tgConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tgProcessor := handlers.New(tgClient)
+	bot, err := bot.New(tgConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	msgListener := worker.NewMessageListenerWorker(tgClient, tgProcessor)
+	// DATABASE
+	dbConfig, _ := config.New()
+	tgDB := database.New(ctx, dbConfig)
+
+	// SERVICES
+	usersService := usersService2.New(tgDB)
+
+	// CONTROLLERS
+	msgListener := controllers.NewFetcherWorker(bot)
+	msgHandler := controllers.NewMessageHandler(bot, usersService)
+
+	// WORKERS
+	msgListenerWorker := worker.NewMessageListenerWorker(msgListener, msgHandler)
 
 	// Start receiving messages
-
 	log.Println("started telegram bot")
-	msgListener.Run(ctx)
+	msgListenerWorker.Run(ctx)
+
 }
