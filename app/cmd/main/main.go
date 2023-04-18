@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"go.etcd.io/bbolt"
 	"log"
 	"tgBotIntern/app/internal/database"
 	"tgBotIntern/app/internal/database/config"
 	usersService2 "tgBotIntern/app/internal/services/usersService"
-	"tgBotIntern/app/internal/telegram/bot"
+	bot2 "tgBotIntern/app/internal/telegram/bot"
 	telegramConfig "tgBotIntern/app/internal/telegram/config"
 	"tgBotIntern/app/internal/telegram/controllers"
 	"tgBotIntern/app/internal/telegram/worker"
@@ -14,9 +16,6 @@ import (
 
 func main() {
 	ctx := context.Background()
-	// It's better to use sessions than context injection
-	// TODO - replace withValue with session of currentUser
-	ctx = context.WithValue(ctx, "ROLE", -1)
 	tgConfig, err := telegramConfig.New()
 	if err != nil {
 		log.Fatal(err)
@@ -24,7 +23,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	bot, err := bot.New(tgConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,6 +31,24 @@ func main() {
 	dbConfig, _ := config.New()
 	tgDB := database.New(ctx, dbConfig)
 
+	tokenDB, err := bbolt.Open("users.db", 0600, nil)
+
+	err = tokenDB.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte("users"))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tokenDB.Close()
+
+	bot, err := bot2.New(tgConfig, tokenDB)
 	// SERVICES
 	usersService := usersService2.New(tgDB)
 
