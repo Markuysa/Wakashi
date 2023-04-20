@@ -4,6 +4,8 @@ services:
     build: .
     container_name: telegram_bot
     restart: always
+    ports:
+      - "8080:8080"
   postgres:
     image: postgres:latest
     environment:

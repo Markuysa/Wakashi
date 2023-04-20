@@ -3,15 +3,15 @@ package worker
 import (
 	"context"
 	"log"
-	"tgBotIntern/app/internal/telegram/controllers"
+	"tgBotIntern/app/internal/telegram/infrastructure/processors"
 )
 
 type MessageListenerWorker struct {
-	fetcher   controllers.MessageFetcher
-	processor controllers.MessageProcessor
+	fetcher   processors.MessageFetcher
+	processor processors.MessageProcessor
 }
 
-func NewMessageListenerWorker(messageFetcher *controllers.FetcherWorker, processor *controllers.MessageHandler) *MessageListenerWorker {
+func NewMessageListenerWorker(messageFetcher *processors.FetcherWorker, processor *processors.MessageHandler) *MessageListenerWorker {
 	return &MessageListenerWorker{
 		fetcher:   messageFetcher,
 		processor: processor,

@@ -6,6 +6,7 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/internal/helpers/encoder"
+	"tgBotIntern/app/pkg/auth/domain"
 )
 
 type UsersDB interface {
@@ -13,6 +14,7 @@ type UsersDB interface {
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserRoleID(ctx context.Context, username string) (int, error)
 	IsExist(ctx context.Context, username, password string) (bool, error)
+	SetUserSession(ctx context.Context, username string, session domain.Session) error
 }
 
 // AddUser method creates new entry in the users table of the database
@@ -89,4 +91,8 @@ func (db *BotDatabase) IsExist(ctx context.Context, username, password string) (
 		return false, errors.New("failed to check matching of the password:%v", err)
 	}
 	return matches, nil
+}
+
+func (db *BotDatabase) SetUserSession(ctx context.Context, username string, session domain.Session) error {
+	return nil
 }

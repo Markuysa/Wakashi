@@ -2,16 +2,25 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"go.etcd.io/bbolt"
+	"github.com/go-redis/redis/v8"
+	"gopkg.in/hedzr/errors.v3"
 	"log"
 	"tgBotIntern/app/internal/database"
 	"tgBotIntern/app/internal/database/config"
-	usersService2 "tgBotIntern/app/internal/services/usersService"
-	bot2 "tgBotIntern/app/internal/telegram/bot"
+	"tgBotIntern/app/internal/telegram/bot"
 	telegramConfig "tgBotIntern/app/internal/telegram/config"
 	"tgBotIntern/app/internal/telegram/controllers"
+	"tgBotIntern/app/internal/telegram/infrastructure/processors"
 	"tgBotIntern/app/internal/telegram/worker"
+	"tgBotIntern/app/pkg/auth/server"
+	"tgBotIntern/app/pkg/auth/service/tokenService"
+	usersService2 "tgBotIntern/app/pkg/auth/service/usersService"
+	"tgBotIntern/app/pkg/auth/tokenDb"
+	"time"
+)
+
+const (
+	AuthServerPort = ":8080"
 )
 
 func main() {
@@ -20,44 +29,45 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// DATABASE
 	dbConfig, _ := config.New()
 	tgDB := database.New(ctx, dbConfig)
 
-	tokenDB, err := bbolt.Open("users.db", 0600, nil)
-
-	err = tokenDB.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte("users"))
-		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
-		}
-		return nil
+	redisCLient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "islam20011",
+		DB:       0,
 	})
+	tokenDB := tokenDb.NewTokenRepository(redisCLient, 24*time.Hour)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer tokenDB.Close()
-
-	bot, err := bot2.New(tgConfig, tokenDB)
-	// SERVICES
-	usersService := usersService2.New(tgDB)
 
 	// CONTROLLERS
-	msgListener := controllers.NewFetcherWorker(bot)
-	msgHandler := controllers.NewMessageHandler(bot, usersService)
+
+	controller := &controllers.AdminHandler{}
+
+	bot, err := bot.New(tgConfig, tokenDB, controller)
+
+	// SERVICES
+	tokensService := tokenService.NewTokenService(tokenDB)
+	usersService := usersService2.NewUsersService(tgDB, tokensService)
+	// PROCESSORS
+	msgListener := processors.NewFetcherWorker(bot)
+	msgHandler := processors.NewMessageHandler(bot, usersService)
 
 	// WORKERS
 	msgListenerWorker := worker.NewMessageListenerWorker(msgListener, msgHandler)
+
+	// START THE AUTHENTICATION SERVER
+	authServer := server.NewAuthSerer(AuthServerPort, tokenDB, usersService)
+	go func() {
+		err := authServer.Start()
+		if err != nil {
+			log.Fatal(errors.New("failed to start authServer:%v", err))
+		}
+	}()
 
 	// Start receiving messages
 	log.Println("started telegram bot")
