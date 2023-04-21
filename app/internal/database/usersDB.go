@@ -6,15 +6,13 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/internal/helpers/encoder"
-	"tgBotIntern/app/pkg/auth/domain"
 )
 
 type UsersDB interface {
 	AddUser(ctx context.Context, password, username string, role int) error
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserRoleID(ctx context.Context, username string) (int, error)
-	IsExist(ctx context.Context, username, password string) (bool, error)
-	SetUserSession(ctx context.Context, username string, session domain.Session) error
+	IsExist(ctx context.Context, username, password string) (*entity.User, error)
 }
 
 // AddUser method creates new entry in the users table of the database
@@ -81,18 +79,17 @@ func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int,
 	return role, nil
 }
 
-func (db *BotDatabase) IsExist(ctx context.Context, username, password string) (bool, error) {
+func (db *BotDatabase) IsExist(ctx context.Context, username, password string) (*entity.User, error) {
 	user, err := db.GetUser(ctx, username)
 	if err != nil {
-		return false, errors.New("failed to check existence of the user:%v", err)
+		return nil, errors.New("failed to check existence of the user:%v", err)
 	}
 	matches, err := encoder.IsMatch(user.Password, password)
 	if err != nil {
-		return false, errors.New("failed to check matching of the password:%v", err)
+		return nil, errors.New("failed to check matching of the password:%v", err)
 	}
-	return matches, nil
-}
-
-func (db *BotDatabase) SetUserSession(ctx context.Context, username string, session domain.Session) error {
-	return nil
+	if matches {
+		return user, nil
+	}
+	return nil, errors.New("user cannot be found: incorrect password")
 }

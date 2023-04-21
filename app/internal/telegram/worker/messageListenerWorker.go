@@ -3,15 +3,15 @@ package worker
 import (
 	"context"
 	"log"
-	"tgBotIntern/app/internal/telegram/infrastructure/processors"
+	"tgBotIntern/app/internal/telegram/controllers"
 )
 
 type MessageListenerWorker struct {
-	fetcher   processors.MessageFetcher
-	processor processors.MessageProcessor
+	fetcher   controllers.MessageFetcher
+	processor controllers.MessageProcessor
 }
 
-func NewMessageListenerWorker(messageFetcher *processors.FetcherWorker, processor *processors.MessageHandler) *MessageListenerWorker {
+func NewMessageListenerWorker(messageFetcher *controllers.FetcherWorker, processor *controllers.MessageHandler) *MessageListenerWorker {
 	return &MessageListenerWorker{
 		fetcher:   messageFetcher,
 		processor: processor,
@@ -28,13 +28,10 @@ func (w *MessageListenerWorker) Run(ctx context.Context) {
 		default:
 			{
 				message := update.Message
-				err := w.processor.HandleIncomingMessage(
+				w.processor.HandleIncomingMessage(
 					ctx,
 					message,
 				)
-				if err != nil {
-					return
-				}
 			}
 		}
 	}

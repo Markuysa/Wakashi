@@ -10,7 +10,6 @@ import (
 	"tgBotIntern/app/internal/telegram/bot"
 	telegramConfig "tgBotIntern/app/internal/telegram/config"
 	"tgBotIntern/app/internal/telegram/controllers"
-	"tgBotIntern/app/internal/telegram/infrastructure/processors"
 	"tgBotIntern/app/internal/telegram/worker"
 	"tgBotIntern/app/pkg/auth/server"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
@@ -30,32 +29,29 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// DATABASE
+	// DATABASE - ENTITIES
 	dbConfig, _ := config.New()
 	tgDB := database.New(ctx, dbConfig)
 
 	redisCLient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "islam20011",
-		DB:       0,
+		Addr: "localhost:6379",
+		//Password: "islam20011",
+		DB: 0,
 	})
 	tokenDB := tokenDb.NewTokenRepository(redisCLient, 24*time.Hour)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// CONTROLLERS
+	botClient, err := bot.New(tgConfig)
 
-	controller := &controllers.AdminHandler{}
-
-	bot, err := bot.New(tgConfig, tokenDB, controller)
-
-	// SERVICES
+	// SERVICES - USE CASE
 	tokensService := tokenService.NewTokenService(tokenDB)
 	usersService := usersService2.NewUsersService(tgDB, tokensService)
-	// PROCESSORS
-	msgListener := processors.NewFetcherWorker(bot)
-	msgHandler := processors.NewMessageHandler(bot, usersService)
+
+	// CONTROLLERS - HANDLERS
+	msgListener := controllers.NewFetcherWorker(botClient)
+	msgHandler := controllers.NewMessageHandler(botClient, usersService)
 
 	// WORKERS
 	msgListenerWorker := worker.NewMessageListenerWorker(msgListener, msgHandler)
