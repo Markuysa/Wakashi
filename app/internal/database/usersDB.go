@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"gopkg.in/hedzr/errors.v3"
 	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/internal/helpers/encoder"
@@ -51,14 +50,13 @@ func (db *BotDatabase) GetUser(ctx context.Context, username string) (*entity.Us
 `
 	var user entity.User
 	row := db.db.QueryRow(ctx, query, username)
-	fmt.Println()
 	if err := row.Scan(&user.Username, &user.Password, &user.Role); err != nil {
 		return nil, errors.New("failed getting user:%v", err)
 	}
 	return &user, nil
 }
 
-// GetUserRole returns string role of the user with given username
+// GetUserRoleID returns string role of the user with given username
 func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int, error) {
 
 	//query := `
@@ -67,7 +65,7 @@ func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int,
 	//	where users.username=$1
 	//`
 	query := `
-		select r.role_id from users 
+		select r.role_id from users
 		inner join roles r on r.role_id = users.role
 		where users.username=$1
 	`

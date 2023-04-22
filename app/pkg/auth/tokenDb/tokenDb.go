@@ -32,7 +32,7 @@ func NewTokenRepository(db *redis.Client, sessionTTL time.Duration) *TokenReposi
 func (t *TokenRepository) Save(ctx context.Context, username string, session domain.Session) error {
 	jsonObj, err := json.Marshal(session)
 	if err != nil {
-		errors.New("failed to serialize session data")
+		return errors.New("failed to serialize session data")
 	}
 	return t.db.Set(ctx, username, jsonObj, t.sessionTTL).Err()
 }

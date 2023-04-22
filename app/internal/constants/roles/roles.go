@@ -14,7 +14,7 @@ const (
 	Card
 )
 
-func GetRoleString(role string) int {
+func GetRoleID(role string) int {
 	role = strings.ToLower(role)
 	switch role {
 	case "administrator":
@@ -31,4 +31,21 @@ func GetRoleString(role string) int {
 		return Card
 	}
 	return -1
+}
+func GetRoleString(role int) string {
+	switch role {
+	case 1:
+		return "administrator"
+	case 2:
+		return "shogun"
+	case 3:
+		return "daimyo"
+	case 4:
+		return "samurai"
+	case 5:
+		return "collector"
+	case 6:
+		return "card"
+	}
+	return ""
 }

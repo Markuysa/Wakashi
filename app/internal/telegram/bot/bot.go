@@ -12,7 +12,7 @@ type TgClientWrapper struct {
 	Client *tgbotapi.BotAPI
 }
 
-// New creates new tgBot
+// New creates new tgBot client
 func New(tgConfig *config.Config) (*TgClientWrapper, error) {
 	client, err := tgbotapi.NewBotAPI(tgConfig.ApiToken)
 

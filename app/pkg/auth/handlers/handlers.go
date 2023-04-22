@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
+	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
@@ -33,11 +34,7 @@ func NewTgBotAuth(usersService *usersService.UsersService) *TgBotAuth {
 
 func (t *TgBotAuth) HandleRegister(c *gin.Context) {
 
-	var user struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		Role     string `json:"role"`
-	}
+	var user entity.User
 	if err := json.NewDecoder(c.Request.Body).Decode(&user); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
 		return

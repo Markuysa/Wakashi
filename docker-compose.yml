@@ -15,5 +15,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+  redis:
+    image: redis:latest
+    environment:
+      REDIS_PASSWORD: islam20011
+    restart: always
+    #volumes:
+      #- redis_data:
+
 volumes:
   postgres_data:

@@ -5,10 +5,14 @@ import (
 	"tgBotIntern/app/internal/telegram/bot"
 )
 
+// FetcherWorker implements MessageFetcher interface
+// and provides start/stop methods to control
+// message fetching process
 type FetcherWorker struct {
 	tgClient *bot.TgClientWrapper
 }
 
+// NewFetcherWorker method creates new message fetcher worker
 func NewFetcherWorker(bot *bot.TgClientWrapper) *FetcherWorker {
 	return &FetcherWorker{tgClient: bot}
 }

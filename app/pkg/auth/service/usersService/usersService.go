@@ -3,7 +3,6 @@ package usersService
 import (
 	"context"
 	"gopkg.in/hedzr/errors.v3"
-	"tgBotIntern/app/internal/constants/roles"
 	"tgBotIntern/app/internal/database"
 	"tgBotIntern/app/pkg/auth/domain"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
@@ -11,11 +10,11 @@ import (
 )
 
 type UsersRepositoryService interface {
-	RegisterUser(ctx context.Context, username, password string, role string) error
+	RegisterUser(ctx context.Context, username, password string, roleID int) error
 	AuthorizeUser(ctx context.Context, username, password string) (tokenService.Tokens, error)
-	GetRole(ctx context.Context, username string) (int, error)
-	CreateUserSession(ctx context.Context, username string, role string) (tokenService.Tokens, error)
-	IsUserSessionValid(ctx context.Context, username string, role string) (bool, error)
+	GetRoleID(ctx context.Context, username string) (int, error)
+	CreateUserSession(ctx context.Context, username string, roleID int) (tokenService.Tokens, error)
+	IsUserSessionValid(ctx context.Context, username string, roleID int) (bool, error)
 }
 
 type UsersService struct {
@@ -28,7 +27,7 @@ type UsersService struct {
 func NewUsersService(repos *database.BotDatabase, tokenManager tokenService.TokenManager) *UsersService {
 	return &UsersService{repos: repos, tokenManager: tokenManager}
 }
-func (u *UsersService) IsUserSessionValid(ctx context.Context, username string, role string) (bool, error) {
+func (u *UsersService) IsUserSessionValid(ctx context.Context, username string, role int) (bool, error) {
 	session, err := u.tokenManager.GetUserSession(ctx, username)
 	if session != nil {
 		user, err := u.tokenManager.ParseToken(ctx, session.AccessToken)
@@ -38,17 +37,17 @@ func (u *UsersService) IsUserSessionValid(ctx context.Context, username string, 
 		if user.Role == role {
 			return true, nil
 		}
-		return false, nil
+		return false, err
 	}
 	return false, errors.New("error with session: token not found", err)
 }
 
-func (u *UsersService) CreateUserSession(ctx context.Context, username string, role string) (tokenService.Tokens, error) {
+func (u *UsersService) CreateUserSession(ctx context.Context, username string, roleID int) (tokenService.Tokens, error) {
 	var (
 		res tokenService.Tokens
 		err error
 	)
-	res.AccessToken, err = u.tokenManager.NewJWT(username, role, u.accessTokenTTL)
+	res.AccessToken, err = u.tokenManager.NewJWT(username, roleID, u.accessTokenTTL)
 	if err != nil {
 		return res, err
 	}
@@ -74,15 +73,14 @@ func (u *UsersService) AuthorizeUser(ctx context.Context, username, password str
 	return u.CreateUserSession(ctx, username, user.Role)
 }
 
-func (u *UsersService) GetRole(ctx context.Context, username string) (int, error) {
+func (u *UsersService) GetRoleID(ctx context.Context, username string) (int, error) {
 	return u.repos.GetUserRoleID(ctx, username)
 }
-func (u *UsersService) RegisterUser(ctx context.Context, username, password string, role string) error {
+func (u *UsersService) RegisterUser(ctx context.Context, username, password string, roleID int) error {
 	user, err := u.repos.GetUser(ctx, username)
 	if user != nil {
 		return errors.New("user already exists")
 	}
-	roleID := roles.GetRoleString(role)
 	if roleID == -1 {
 		return errors.New("error with role: not found")
 	}

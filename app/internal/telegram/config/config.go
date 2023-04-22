@@ -10,6 +10,7 @@ type Config struct {
 	ApiToken string `yaml:"apiToken"`
 }
 
+// New creates new config object
 func New() (*Config, error) {
 	//filePath := os.Getenv("TG_CONFIG_PATH")
 	filePath := "app/internal/telegram/config.yml"

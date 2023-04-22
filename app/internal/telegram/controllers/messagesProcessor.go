@@ -5,6 +5,7 @@ import (
 	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"strings"
+	"tgBotIntern/app/internal/constants/roles"
 	"tgBotIntern/app/internal/telegram/bot"
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
@@ -49,11 +50,11 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 		}
 
 	case "sayhi":
-		cond, err := h.usersService.IsUserSessionValid(ctx, message.From.UserName, "Administrator")
+		cond, _ := h.usersService.IsUserSessionValid(ctx, "islam", roles.Shogun)
 		if cond {
 			msg.Text = "I'm ok."
 		} else {
-			msg.Text = err.Error()
+			msg.Text = "You don't have rights to call this endpoint"
 		}
 		h.SendMessage(msg)
 	case "status":
@@ -70,7 +71,8 @@ func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.Messag
 	username := strings.TrimSpace(strings.Split(params[0], "=")[1])
 	password := strings.TrimSpace(strings.Split(params[1], "=")[1])
 	role := strings.TrimSpace(strings.Split(params[2], "=")[1])
-	err := h.usersService.RegisterUser(ctx, username, password, role)
+	roleID := roles.GetRoleID(role)
+	err := h.usersService.RegisterUser(ctx, username, password, roleID)
 	if err != nil {
 
 		return err

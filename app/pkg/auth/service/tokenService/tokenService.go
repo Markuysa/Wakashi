@@ -14,7 +14,7 @@ import (
 
 type TokenManager interface {
 	NewRefreshToken() (string, error)
-	NewJWT(username string, role string, ttl time.Duration) (string, error)
+	NewJWT(username string, role int, ttl time.Duration) (string, error)
 	SetUserSession(ctx context.Context, username string, session domain.Session) error
 	GetUserSession(ctx context.Context, username string) (*domain.Session, error)
 	ParseToken(ctx context.Context, tokenString string) (entity.User, error)
@@ -36,10 +36,10 @@ func NewTokenService(tokenRepository tokenDb.TokenRepos) *TokenService {
 
 	return &TokenService{TokenRepository: tokenRepository}
 }
-func (s *TokenService) NewJWT(username string, role string, ttl time.Duration) (string, error) {
+func (s *TokenService) NewJWT(username string, roleID int, ttl time.Duration) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
-	claims["role"] = role
+	claims["role"] = roleID
 	claims["username"] = username
 	claims["expire"] = ttl
 	tokenString, err := token.SignedString([]byte("my-secret-key"))
@@ -69,7 +69,6 @@ func (s *TokenService) GetUserSession(ctx context.Context, username string) (*do
 
 func (s *TokenService) ParseToken(ctx context.Context, tokenString string) (entity.User, error) {
 	parsedToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// make sure the signing method is HMAC
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -80,9 +79,9 @@ func (s *TokenService) ParseToken(ctx context.Context, tokenString string) (enti
 		return entity.User{}, err
 	}
 	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
-		// print the user info
+		var role int = int(claims["role"].(float64))
 		user := entity.User{
-			Role:     claims["role"].(string),
+			Role:     role,
 			Username: claims["username"].(string),
 		}
 		return user, nil

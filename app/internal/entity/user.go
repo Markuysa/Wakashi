@@ -1,16 +1,16 @@
 package entity
 
 type User struct {
-	Username string
-	Password string
-	Role     string
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     int    `json:"role"`
 }
 
-func New(username, password, role string) *User {
+func New(username, password string, roleID int) *User {
 
 	return &User{
 		Username: username,
 		Password: password,
-		Role:     role,
+		Role:     roleID,
 	}
 }
