@@ -14,4 +14,20 @@ const (
 		To login user the endpoint: /login username=.. password=..
 		Sya!👋
 `
+	AdminDoc_createEntity = `
+	To create entity you should know the username, password and role.
+	Example of command, that creates new shogun user: /admin_createEntity username=tgUsername password=qwerty role=shogun
+	Notice the order of parameters and the username should be a username of real telegram user, otherwise u will
+	not be able to get access to user data.
+`
+	AdminDoc_createCard = `
+	To create card you should know the card number, bank unique id, owner username and cvv-code.
+	Example of command, that creates new card: /admin_createCard number=4567344598433456 bank_id=1481 owner=tgUsername cvv=123
+	Notice the order of parameters and the username should be a username of real telegram user.
+	Also you should use one of the available bank id's:
+	1481 - Sberbank
+	1326 - Alpha
+	2673 - Tinkoff
+	3292 - Raiffeisenbank
+`
 )

@@ -1,18 +1,32 @@
 package helpers
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"tgBotIntern/app/internal/constants/roles"
+)
 
 var (
-	NumericKeyboard = tgbotapi.NewReplyKeyboard(
+	adminKeyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("1"),
-			tgbotapi.NewKeyboardButton("2"),
-			tgbotapi.NewKeyboardButton("3"),
+			tgbotapi.NewKeyboardButton("create entity"),
+			tgbotapi.NewKeyboardButton("create card"),
+			tgbotapi.NewKeyboardButton("bind card to daimyo"),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("4"),
-			tgbotapi.NewKeyboardButton("5"),
-			tgbotapi.NewKeyboardButton("6"),
+			tgbotapi.NewKeyboardButton("bind slave to master"),
+			tgbotapi.NewKeyboardButton("get entity data"),
 		),
 	)
 )
+
+func GetKeyboard(roleID int) tgbotapi.ReplyKeyboardMarkup {
+	switch roleID {
+	case roles.Administrator:
+		{
+			return adminKeyboard
+		}
+	default:
+		// return default keyboard
+		return adminKeyboard
+	}
+}

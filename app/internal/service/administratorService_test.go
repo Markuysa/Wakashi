@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/pkg/auth/service/usersService"
@@ -24,9 +25,7 @@ func TestAdministratorService_BindCardToDaimyo(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{
-			name: "no daimyo with that name",
-		},
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,12 +146,13 @@ func TestAdministratorService_GetEntityReport(t *testing.T) {
 	}
 	type args struct {
 		ctx      context.Context
-		entityID int
+		userName string
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
+		want    *entity.Report
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -164,8 +164,13 @@ func TestAdministratorService_GetEntityReport(t *testing.T) {
 				cardService:     tt.fields.cardService,
 				relationService: tt.fields.relationService,
 			}
-			if err := a.GetEntityReport(tt.args.ctx, tt.args.entityID); (err != nil) != tt.wantErr {
+			got, err := a.GetEntityReport(tt.args.ctx, tt.args.userName)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntityReport() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetEntityReport() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

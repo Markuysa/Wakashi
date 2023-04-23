@@ -11,16 +11,36 @@ type CardsDB interface {
 	AddCard(ctx context.Context, card entity.Card) error
 	BindCard(ctx context.Context, cardNumber int, ownerID int) error
 	GetCardsList(ctx context.Context, ownerID int) ([]entity.Card, error)
-	SetCardTotal(ctx context.Context, total int, number int) error
+	SetCardTotal(ctx context.Context, total float64, number int) error
+	IncreaseTotal(ctx context.Context, incValue float64) error
+	CalculateTurnover(ctx context.Context, username string) (float64, error)
 }
 
-func (db *BotDatabase) SetCardTotal(ctx context.Context, total int, number int) error {
-	//	query := `
-	//	update card
-	//	set total=$1
-	//	where card
-	//`
+func (db *BotDatabase) CalculateTurnover(ctx context.Context, username string) (float64, error) {
+	query := `
+		select SUM(total) from card inner join users u on u.id = card.owner_id
+		where username=$1
+		
+`
+	var total float64
+	err := db.db.QueryRow(ctx, query, username).Scan(&total)
+	if err != nil {
+		return 0, errors.New("failed to get total")
+	}
+	return total, nil
+}
+func (db *BotDatabase) IncreaseTotal(ctx context.Context, incValue float64) error {
+
 	return nil
+}
+func (db *BotDatabase) SetCardTotal(ctx context.Context, total float64, number int) error {
+	query := `
+		update card
+		set total=$1
+		where card_number=$2
+	`
+	_, err := db.db.Query(ctx, query, total, number)
+	return err
 }
 func (db *BotDatabase) GetCard(ctx context.Context, cardNumber int) (*entity.Card, error) {
 

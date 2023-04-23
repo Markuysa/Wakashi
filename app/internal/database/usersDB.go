@@ -116,7 +116,7 @@ func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int,
 func (db *BotDatabase) IsExist(ctx context.Context, username, password string) (*entity.User, error) {
 	user, err := db.GetUser(ctx, username)
 	if err != nil {
-		return nil, errors.New("failed to check existence of the user:%v", "incorrect username")
+		return nil, errors.New(" incorrect username")
 	}
 	matches, err := encoder.IsMatch(user.Password, password)
 	if err != nil {

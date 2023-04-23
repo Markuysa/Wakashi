@@ -27,7 +27,7 @@ type InfrastructureController interface {
 // MessageProcessor interface represents the contract
 // of object that will fetch the messages from tg bot
 type MessageProcessor interface {
-	HandleIncomingMessage(ctx context.Context, message *tgbotapi.Message)
+	HandleIncomingMessage(ctx context.Context, message *tgbotapi.Message) error
 	SendMessage(msg tgbotapi.MessageConfig) error
 }
 

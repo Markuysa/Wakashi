@@ -11,7 +11,7 @@ type DaimyoRights interface {
 	GetCardsList(ctx context.Context, ownerID int) ([]entity.Card, error)
 	CreateCardIncreasementRequest(ctx context.Context, cardID int, increasementValue float64) error
 	GetSamuraiList(ctx context.Context, masterUsername string) ([]entity.User, error)
-	SetCardsBalances(ctx context.Context, totalValue, cardnumber int) error
+	SetCardsBalances(ctx context.Context, totalValue float64, cardnumber int) error
 	BindShogun(ctx context.Context, shogunUsername, daimyoUsername string) error
 }
 
@@ -33,7 +33,7 @@ func (s *DaimyoService) GetSamuraiList(ctx context.Context, masterUsername strin
 	return s.userService.GetSlavesList(ctx, masterUsername, roles.Samurai)
 }
 
-func (s *DaimyoService) SetCardsBalances(ctx context.Context, totalValue, cardnumber int) error {
+func (s *DaimyoService) SetCardsBalances(ctx context.Context, totalValue float64, cardnumber int) error {
 	return s.cardsService.SetTotal(ctx, totalValue, cardnumber)
 }
 

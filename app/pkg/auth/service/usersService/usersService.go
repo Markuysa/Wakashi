@@ -17,6 +17,7 @@ type UsersRepositoryService interface {
 	CreateUserSession(ctx context.Context, username string, roleID int) (tokenService.Tokens, error)
 	IsUserSessionValid(ctx context.Context, username string, roleID int) (bool, error)
 	GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error)
+	GetUser(ctx context.Context, username string) (*entity.User, error)
 }
 
 type UsersService struct {
@@ -28,6 +29,9 @@ type UsersService struct {
 
 func NewUsersService(repos *database.BotDatabase, tokenManager tokenService.TokenManager) *UsersService {
 	return &UsersService{repos: repos, tokenManager: tokenManager}
+}
+func (u *UsersService) GetUser(ctx context.Context, username string) (*entity.User, error) {
+	return u.repos.GetUser(ctx, username)
 }
 func (u *UsersService) GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error) {
 	return u.repos.GetSlavesList(ctx, masterUsername, slaveRole)
@@ -61,13 +65,19 @@ func (u *UsersService) CreateUserSession(ctx context.Context, username string, r
 		ExpiresAt:   time.Now().Add(u.refreshTokenTTL),
 	}
 	err = u.tokenManager.SetUserSession(ctx, username, session)
-	return res, err
+	if err != nil {
+		return tokenService.Tokens{}, err
+	}
+	if err != nil {
+		return tokenService.Tokens{}, err
+	}
+	return res, nil
 }
 
 func (u *UsersService) AuthorizeUser(ctx context.Context, username, password string) (tokenService.Tokens, error) {
 	user, err := u.repos.IsExist(ctx, username, password)
 	if err != nil {
-		return tokenService.Tokens{}, errors.New("failed to authorize user:%v", err)
+		return tokenService.Tokens{}, err
 	}
 	return u.CreateUserSession(ctx, username, user.Role)
 }

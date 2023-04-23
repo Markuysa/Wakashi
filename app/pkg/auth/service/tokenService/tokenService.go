@@ -17,6 +17,8 @@ type TokenManager interface {
 	SetUserSession(ctx context.Context, username string, session domain.Session) error
 	GetUserSession(ctx context.Context, username string) (*domain.Session, error)
 	ParseToken(ctx context.Context, tokenString, username string, role int) (bool, error)
+	SetCurrentActiveUser(ctx context.Context, username string) error
+	ResetUserSession(ctx context.Context, username string) error
 }
 
 type Tokens struct {
@@ -28,8 +30,16 @@ type TokenService struct {
 	TokenRepository tokenDb.TokenRepos
 }
 
+func (s *TokenService) ResetUserSession(ctx context.Context, username string) error {
+	return s.TokenRepository.Remove(ctx, username)
+}
+
+func (s *TokenService) SetCurrentActiveUser(ctx context.Context, username string) error {
+	return s.TokenRepository.SaveCurrentUser(ctx, username)
+}
+
 func (s *TokenService) SetUserSession(ctx context.Context, username string, session domain.Session) error {
-	return s.TokenRepository.Save(ctx, username, session)
+	return s.TokenRepository.SaveSession(ctx, username, session)
 }
 func NewTokenService(tokenRepository tokenDb.TokenRepos) *TokenService {
 

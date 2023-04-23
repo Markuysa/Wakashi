@@ -51,7 +51,7 @@ func main() {
 
 	// CONTROLLERS - HANDLERS
 	msgListener := controllers.NewFetcherWorker(botClient)
-	msgHandler := controllers.NewMessageHandler(botClient, usersService)
+	msgHandler := controllers.NewMessageHandler(botClient, usersService, tokensService)
 
 	// WORKERS
 	msgListenerWorker := worker.NewMessageListenerWorker(msgListener, msgHandler)
