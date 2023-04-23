@@ -1,4 +1,4 @@
-package entity
+package service
 
 type SamuraiRights interface {
 	SetTurnover() error

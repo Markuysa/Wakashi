@@ -7,6 +7,7 @@ import (
 	"strings"
 	"tgBotIntern/app/internal/constants/roles"
 	"tgBotIntern/app/internal/telegram/bot"
+	"tgBotIntern/app/internal/ui/messages"
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
@@ -36,17 +37,22 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
 	switch message.Command() {
+	case "start":
+		msg.Text = messages.GreetingMessage
+		h.SendMessage(msg)
 	case "register":
 		params := strings.Split(message.Text, " ")[1:]
 		err := h.handleRegister(ctx, msg, params)
 		if err != nil {
 			msg.Text = err.Error()
+			h.SendMessage(msg)
 		}
 	case "login":
 		params := strings.Split(message.Text, " ")[1:]
 		err := h.handleLogin(ctx, msg, params)
 		if err != nil {
 			msg.Text = err.Error()
+			h.SendMessage(msg)
 		}
 
 	case "sayhi":
@@ -74,7 +80,6 @@ func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.Messag
 	roleID := roles.GetRoleID(role)
 	err := h.usersService.RegisterUser(ctx, username, password, roleID)
 	if err != nil {
-
 		return err
 	}
 	msg.Text = "Successfully registered!"

@@ -1,4 +1,4 @@
-package entity
+package service
 
 type CollectorRights interface {
 	HandleDaimyoIncreasementRequest() error

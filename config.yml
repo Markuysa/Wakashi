@@ -1,0 +1,8 @@
+database:
+  host: localhost
+  password: islam20011
+  DBName: postgres
+  port: 5432
+  user: postgres
+telegram:
+  apiToken: 5823980070:AAGDNAvLjNmchpI80BAmrH1zaOM8InuBOk8

@@ -12,6 +12,42 @@ type UsersDB interface {
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserRoleID(ctx context.Context, username string) (int, error)
 	IsExist(ctx context.Context, username, password string) (*entity.User, error)
+	GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error)
+	GetUserID(ctx context.Context, username string) (int, error)
+}
+
+func (db *BotDatabase) GetUserID(ctx context.Context, username string) (int, error) {
+	query := `
+		select id from users
+		where username=$1
+`
+	var userID int
+	row := db.db.QueryRow(ctx, query, username)
+	if err := row.Scan(&userID); err != nil {
+		return -1, errors.New("failed getting userID:%v", err)
+	}
+	return userID, nil
+}
+
+func (u *BotDatabase) GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error) {
+	query := `
+	select username,role,password from users 
+	inner join relation r on users.id = r.slave_id
+	where users.role=$1 and users.id=$2
+`
+	rows, err := u.db.Query(ctx, query, slaveRoleID, masterUsername)
+	if err != nil {
+		return nil, errors.New("failed to get daimyo list:%v", err)
+	}
+	var users []entity.User
+	for rows.Next() {
+		var user entity.User
+		if err := rows.Scan(&user.Username, &user.Role, &user.Password); err != nil {
+			return nil, errors.New("failed to scan daimyo:%v", err)
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 // AddUser method creates new entry in the users table of the database
@@ -80,7 +116,7 @@ func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int,
 func (db *BotDatabase) IsExist(ctx context.Context, username, password string) (*entity.User, error) {
 	user, err := db.GetUser(ctx, username)
 	if err != nil {
-		return nil, errors.New("failed to check existence of the user:%v", err)
+		return nil, errors.New("failed to check existence of the user:%v", "incorrect username")
 	}
 	matches, err := encoder.IsMatch(user.Password, password)
 	if err != nil {

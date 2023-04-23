@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go/v4"
 	"math/rand"
-	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/pkg/auth/domain"
 	"tgBotIntern/app/pkg/auth/tokenDb"
 	"time"
@@ -17,7 +16,7 @@ type TokenManager interface {
 	NewJWT(username string, role int, ttl time.Duration) (string, error)
 	SetUserSession(ctx context.Context, username string, session domain.Session) error
 	GetUserSession(ctx context.Context, username string) (*domain.Session, error)
-	ParseToken(ctx context.Context, tokenString string) (entity.User, error)
+	ParseToken(ctx context.Context, tokenString, username string, role int) (bool, error)
 }
 
 type Tokens struct {
@@ -67,7 +66,7 @@ func (s *TokenService) GetUserSession(ctx context.Context, username string) (*do
 	return &get, nil
 }
 
-func (s *TokenService) ParseToken(ctx context.Context, tokenString string) (entity.User, error) {
+func (s *TokenService) ParseToken(ctx context.Context, tokenString, username string, role int) (bool, error) {
 	parsedToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -76,16 +75,16 @@ func (s *TokenService) ParseToken(ctx context.Context, tokenString string) (enti
 		return []byte("my-secret-key"), nil
 	})
 	if err != nil {
-		return entity.User{}, err
+		return false, err
 	}
 	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
-		var role int = int(claims["role"].(float64))
-		user := entity.User{
-			Role:     role,
-			Username: claims["username"].(string),
+		roleClaims := int(claims["role"].(float64))
+		usernameClaims := claims["username"].(string)
+		if usernameClaims == username && roleClaims == role {
+			return true, nil
 		}
-		return user, nil
+		return false, nil
 	} else {
-		return entity.User{}, errors.New("invalid token")
+		return false, errors.New("invalid token")
 	}
 }
