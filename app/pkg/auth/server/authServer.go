@@ -3,9 +3,9 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"tgBotIntern/app/pkg/auth/database"
 	"tgBotIntern/app/pkg/auth/handlers"
 	"tgBotIntern/app/pkg/auth/service/usersService"
-	"tgBotIntern/app/pkg/auth/tokenDb"
 )
 
 // its better to move server to independent service
@@ -21,7 +21,7 @@ type AuthSerer struct {
 	RequestHandlers handlers.AuthHandler
 }
 
-func NewAuthSerer(port string, repository *tokenDb.TokenRepository, service *usersService.UsersService) *AuthSerer {
+func NewAuthSerer(port string, repository *database.TokenRepository, service *usersService.UsersService) *AuthSerer {
 	return &AuthSerer{
 		port:            port,
 		ServerEngine:    gin.New(),

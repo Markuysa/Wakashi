@@ -17,7 +17,7 @@ func NewMessageListenerWorker(messageFetcher *controllers.FetcherWorker, process
 		processor: processor,
 	}
 }
-func (w *MessageListenerWorker) Run(ctx context.Context) {
+func (w *MessageListenerWorker) Run(ctx context.Context) error {
 	for update := range w.fetcher.Start() {
 		select {
 		case <-ctx.Done():
@@ -28,11 +28,15 @@ func (w *MessageListenerWorker) Run(ctx context.Context) {
 		default:
 			{
 				message := update.Message
-				w.processor.HandleIncomingMessage(
+				err := w.processor.HandleIncomingMessage(
 					ctx,
 					message,
 				)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
