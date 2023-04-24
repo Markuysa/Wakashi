@@ -1,24 +1,20 @@
-package tokenDb
+package database
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"github.com/go-redis/redis/v8"
+	"tgBotIntern/app/pkg/auth/config"
 	"tgBotIntern/app/pkg/auth/domain"
 	"time"
 )
 
-type Bucket string
-
-const (
-	AccessTokens Bucket = "access_token"
-)
-
-// change to redis
 type TokenRepos interface {
-	Save(ctx context.Context, username string, session domain.Session) error
+	SaveSession(ctx context.Context, username string, session domain.Session) error
+	SaveCurrentUser(ctx context.Context, username string) error
 	Get(ctx context.Context, username string) (domain.Session, error)
+	Remove(ctx context.Context, key string) error
 }
 
 type TokenRepository struct {
@@ -26,10 +22,23 @@ type TokenRepository struct {
 	sessionTTL time.Duration
 }
 
-func NewTokenRepository(db *redis.Client, sessionTTL time.Duration) *TokenRepository {
-	return &TokenRepository{db: db, sessionTTL: sessionTTL}
+func NewTokenRepository(config config.Config) *TokenRepository {
+	sessionTTL := 12 * time.Hour
+	client := redis.NewClient(&redis.Options{
+		Addr: config.Host + ":" + config.Port,
+		DB:   0,
+	})
+	return &TokenRepository{db: client, sessionTTL: sessionTTL}
 }
-func (t *TokenRepository) Save(ctx context.Context, username string, session domain.Session) error {
+
+func (t *TokenRepository) Remove(ctx context.Context, key string) error {
+	return t.db.Del(ctx, key).Err()
+}
+
+func (t *TokenRepository) SaveCurrentUser(ctx context.Context, username string) error {
+	return t.db.Set(ctx, "activeUser", username, time.Hour).Err()
+}
+func (t *TokenRepository) SaveSession(ctx context.Context, username string, session domain.Session) error {
 	jsonObj, err := json.Marshal(session)
 	if err != nil {
 		return errors.New("failed to serialize session data")

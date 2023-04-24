@@ -4,6 +4,7 @@ import (
 	"context"
 	"gopkg.in/hedzr/errors.v3"
 	"tgBotIntern/app/internal/database"
+	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/pkg/auth/domain"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
 	"time"
@@ -15,29 +16,35 @@ type UsersRepositoryService interface {
 	GetRoleID(ctx context.Context, username string) (int, error)
 	CreateUserSession(ctx context.Context, username string, roleID int) (tokenService.Tokens, error)
 	IsUserSessionValid(ctx context.Context, username string, roleID int) (bool, error)
+	GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error)
+	GetUser(ctx context.Context, username string) (*entity.User, error)
+	GetUserID(ctx context.Context, username string) (int, error)
 }
 
 type UsersService struct {
-	repos           database.TelegramDB
+	repos           database.UsersDatabase
 	tokenManager    tokenService.TokenManager
 	refreshTokenTTL time.Duration
 	accessTokenTTL  time.Duration
 }
 
-func NewUsersService(repos *database.BotDatabase, tokenManager tokenService.TokenManager) *UsersService {
-	return &UsersService{repos: repos, tokenManager: tokenManager}
+func NewUsersService(repos database.UsersDatabase, tokenManager tokenService.TokenManager, refreshTokenTTL time.Duration, accessTokenTTL time.Duration) *UsersService {
+	return &UsersService{repos: repos, tokenManager: tokenManager, refreshTokenTTL: refreshTokenTTL, accessTokenTTL: accessTokenTTL}
 }
+func (u *UsersService) GetUserID(ctx context.Context, username string) (int, error) {
+	return u.repos.GetUserID(ctx, username)
+}
+func (u *UsersService) GetUser(ctx context.Context, username string) (*entity.User, error) {
+	return u.repos.GetUser(ctx, username)
+}
+func (u *UsersService) GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error) {
+	return u.repos.GetSlavesList(ctx, masterUsername, slaveRole)
+}
+
 func (u *UsersService) IsUserSessionValid(ctx context.Context, username string, role int) (bool, error) {
 	session, err := u.tokenManager.GetUserSession(ctx, username)
 	if session != nil {
-		user, err := u.tokenManager.ParseToken(ctx, session.AccessToken)
-		if err != nil {
-			return false, err
-		}
-		if user.Role == role {
-			return true, nil
-		}
-		return false, err
+		return u.tokenManager.ParseToken(ctx, session.AccessToken, username, role)
 	}
 	return false, errors.New("error with session: token not found", err)
 }
@@ -62,13 +69,19 @@ func (u *UsersService) CreateUserSession(ctx context.Context, username string, r
 		ExpiresAt:   time.Now().Add(u.refreshTokenTTL),
 	}
 	err = u.tokenManager.SetUserSession(ctx, username, session)
-	return res, err
+	if err != nil {
+		return tokenService.Tokens{}, err
+	}
+	if err != nil {
+		return tokenService.Tokens{}, err
+	}
+	return res, nil
 }
 
 func (u *UsersService) AuthorizeUser(ctx context.Context, username, password string) (tokenService.Tokens, error) {
 	user, err := u.repos.IsExist(ctx, username, password)
 	if err != nil {
-		return tokenService.Tokens{}, errors.New("failed to authorize user:%v", err)
+		return tokenService.Tokens{}, err
 	}
 	return u.CreateUserSession(ctx, username, user.Role)
 }

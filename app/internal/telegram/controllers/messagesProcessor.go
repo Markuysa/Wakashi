@@ -2,23 +2,53 @@ package controllers
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"strings"
 	"tgBotIntern/app/internal/constants/roles"
+	"tgBotIntern/app/internal/service"
 	"tgBotIntern/app/internal/telegram/bot"
+	"tgBotIntern/app/internal/ui/messages"
+	"tgBotIntern/app/pkg/auth/service/tokenService"
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
 type MessageHandler struct {
-	tgClient     *bot.TgClientWrapper
-	usersService usersService.UsersRepositoryService
+	tgClient           *bot.TgClientWrapper
+	usersService       usersService.UsersRepositoryService
+	tokenRepos         tokenService.TokenManager
+	adminService       service.AdministratorRights
+	shogunService      service.ShogunRights
+	daimyoService      service.DaimyoRights
+	samuraiService     service.SamuraiRights
+	collectorService   service.CollectorRights
+	cardService        service.CardRights
+	relationService    service.RelationsServiceMethods
+	transactionService service.TransactionProcessor
 }
 
-func NewMessageHandler(bot *bot.TgClientWrapper, usersService usersService.UsersRepositoryService) *MessageHandler {
-	return &MessageHandler{
-		tgClient:     bot,
-		usersService: usersService,
+func NewMessageHandler(tgClient *bot.TgClientWrapper,
+	usersService usersService.UsersRepositoryService,
+	tokenRepos tokenService.TokenManager,
+	adminService service.AdministratorRights,
+	shogunService service.ShogunRights,
+	daimyoService service.DaimyoRights,
+	samuraiService service.SamuraiRights,
+	collectorService service.CollectorRights,
+	cardService service.CardRights,
+	relationService service.RelationsServiceMethods,
+	transactionService service.TransactionProcessor) *MessageHandler {
+	return &MessageHandler{tgClient: tgClient,
+		usersService:       usersService,
+		tokenRepos:         tokenRepos,
+		adminService:       adminService,
+		shogunService:      shogunService,
+		daimyoService:      daimyoService,
+		samuraiService:     samuraiService,
+		collectorService:   collectorService,
+		cardService:        cardService,
+		relationService:    relationService,
+		transactionService: transactionService,
 	}
 }
 
@@ -32,64 +62,153 @@ func (h *MessageHandler) SendMessage(msg tgbotapi.MessageConfig) error {
 	return nil
 }
 
-func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgbotapi.Message) {
+func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgbotapi.Message) error {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
 	switch message.Command() {
+	// Default commands
+	case "start":
+		msg.Text = messages.GreetingMessage
+		return h.SendMessage(msg)
 	case "register":
-		params := strings.Split(message.Text, " ")[1:]
-		err := h.handleRegister(ctx, msg, params)
-		if err != nil {
-			msg.Text = err.Error()
-		}
+		return h.handleRegister(ctx, msg, message)
 	case "login":
-		params := strings.Split(message.Text, " ")[1:]
-		err := h.handleLogin(ctx, msg, params)
-		if err != nil {
-			msg.Text = err.Error()
-		}
-
-	case "sayhi":
-		cond, _ := h.usersService.IsUserSessionValid(ctx, "islam", roles.Shogun)
-		if cond {
-			msg.Text = "I'm ok."
-		} else {
-			msg.Text = "You don't have rights to call this endpoint"
-		}
-		h.SendMessage(msg)
+		return h.handleLogin(ctx, msg, message)
+	case "exit":
+		return h.handleExit(ctx, msg, message)
 	case "status":
-		msg.Text = "I'm ok."
+		return h.handleStatus(ctx, msg, message)
+
+	// Administrator commands
+	case "admin_createEntity":
+		return h.handleAdminCreateEntity(ctx, msg, message)
+	case "admin_createCard":
+		return h.handleAdminCreateCard(ctx, msg, message)
+	case "admin_bindSlave":
+		return h.handleAdminBindSlave(ctx, msg, message)
+	case "admin_bindCard":
+		return h.handleAdminBindCardToDaimyo(ctx, msg, message)
+	case "admin_entityData":
+		return h.handleAdminEntityData(ctx, msg, message)
+
+	// Shogun commands
+	case "shogun_getSlavesList":
+		return h.handleShogunGetSlavesList(ctx, msg, message)
+	case "shogun_createCard":
+		return h.handleShogunCreateCard(ctx, msg, message)
+	case "shogun_bindCardToSamurai":
+		return h.handleShogunBindCardToSamurai(ctx, msg, message)
+	case "shogun_getSlavesData":
+		return h.handleShogunGetSlavesData(ctx, msg, message)
+
+	// Daimyo commands
+	case "daimyo_getCards":
+		return h.handleDaimyoGetCards(ctx, msg, message)
+	case "daimyo_increase":
+		return h.handleIncCardRequest(ctx, msg, message)
+	case "daimyo_getSamurai":
+		return h.handleDaimyoGetSamurai(ctx, msg, message)
+	case "daimyo_getTotal":
+		return h.handleDaimyoGetTotal(ctx, msg, message)
+	case "daimyo_bindShogun":
+		return h.handleDaimyoBindShogun(ctx, msg, message)
+	// Samurai commands
+	case "samurai_getTurnover":
+		return h.handleSamuraiGetTurnover(ctx, msg, message)
+	case "samurai_bindDaimyo":
+		return h.handleSamuraiBindDaimyo(ctx, msg, message)
+	// Collector commands
+	case "collector_performInc":
+		return h.handleCollectorIncreaseCard(ctx, msg, message)
 	default:
-		msg.Text = "I don't know that command"
+		return h.handleDefaultCommands(ctx, msg, message)
 	}
 }
 
-func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.MessageConfig, params []string) error {
-	if len(params) != 3 {
-		return errors.New("not enough arguments in register command")
+func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+	params := strings.Split(message.Text, " ")[1:]
+	if len(params) != 2 {
+		msg.Text = "not enough arguments in register command"
+		return h.SendMessage(msg)
 	}
-	username := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	password := strings.TrimSpace(strings.Split(params[1], "=")[1])
-	role := strings.TrimSpace(strings.Split(params[2], "=")[1])
+	username := message.From.UserName
+	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	role := strings.TrimSpace(strings.Split(params[1], "=")[1])
 	roleID := roles.GetRoleID(role)
 	err := h.usersService.RegisterUser(ctx, username, password, roleID)
 	if err != nil {
-
-		return err
+		msg.Text = "unable to register user:" + err.Error()
+		return h.SendMessage(msg)
 	}
 	msg.Text = "Successfully registered!"
 	return h.SendMessage(msg)
 }
-func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageConfig, params []string) error {
-	if len(params) != 2 {
-		return errors.New("not enough arguments in register command")
+func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+	params := strings.Split(message.Text, " ")[1:]
+	if len(params) != 1 {
+		msg.Text = "not enough arguments in register command"
+		return h.SendMessage(msg)
 	}
-	username := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	password := strings.TrimSpace(strings.Split(params[1], "=")[1])
+	username := message.From.UserName
+	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	//role, _ := h.usersService.GetRoleID(ctx, username)
 	tokens, err := h.usersService.AuthorizeUser(ctx, username, password)
 	if err != nil {
-		return err
+		msg.Text = "failed to authorize:" + err.Error()
+		return h.SendMessage(msg)
 	}
 	msg.Text = "Successfully authorized! Your access token:" + tokens.AccessToken
+	//msg.ReplyMarkup = helpers.GetKeyboard(role)
+	return h.SendMessage(msg)
+}
+func (h *MessageHandler) handleExit(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+	err := h.tokenRepos.ResetUserSession(ctx, message.From.UserName)
+	if err != nil {
+		msg.Text = "failed to exit: " + err.Error()
+		return h.SendMessage(msg)
+	}
+	msg.Text = "Successfully exited."
+	return h.SendMessage(msg)
+}
+func (h *MessageHandler) handleStatus(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+	isValid, err := h.usersService.IsUserSessionValid(ctx, message.From.UserName, roles.Administrator)
+	if err != nil {
+		msg.Text = "failed to get your status!"
+		return h.SendMessage(msg)
+	}
+	if isValid {
+		user, err := h.usersService.GetUser(ctx, message.From.UserName)
+		if err != nil {
+			msg.Text = "failed to get your data!"
+			return h.SendMessage(msg)
+		}
+		msg.Text = fmt.Sprintf(`
+			Username: %v, 
+			Role: %v,
+		`, user.Username, roles.GetRoleString(user.Role))
+		return h.SendMessage(msg)
+	}
+	msg.Text = "You don't have enough rights to use that command!"
+	return h.SendMessage(msg)
+}
+func (h *MessageHandler) handleDefaultCommands(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+	switch msg.Text {
+	case "create entity":
+		{
+			msg.Text = messages.AdminDoc_createEntity
+			return h.SendMessage(msg)
+		}
+	case "create card":
+		{
+			msg.Text = messages.AdminDoc_createCard
+			return h.SendMessage(msg)
+		}
+	case "bind slave to master":
+		{
+			msg.Text = messages.AdminDoc_bindSlave
+			return h.SendMessage(msg)
+		}
+	}
+	// TODO finish cases
 	return h.SendMessage(msg)
 }

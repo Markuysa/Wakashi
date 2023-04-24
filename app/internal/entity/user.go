@@ -6,11 +6,6 @@ type User struct {
 	Role     int    `json:"role"`
 }
 
-func New(username, password string, roleID int) *User {
-
-	return &User{
-		Username: username,
-		Password: password,
-		Role:     roleID,
-	}
+func NewUser(username string, password string, role int) *User {
+	return &User{Username: username, Password: password, Role: role}
 }

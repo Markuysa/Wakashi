@@ -6,14 +6,14 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 )
 
-// EncodePassword encodes the password with given
+// Encode encodes the password with given
 // type of algo (bcrypt)
-func EncodePassword(password string) (string, error) {
+func Encode(value string) (string, error) {
 	encoding := encoder.New(types.Bcrypt)
 
-	hash, err := encoding.Encode(password)
+	hash, err := encoding.Encode(value)
 	if err != nil {
-		return "", errors.New("encoding password error:%v", err)
+		return "", errors.New("encoding value error:%v", err)
 	}
 	return hash, nil
 }
