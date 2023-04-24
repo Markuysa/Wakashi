@@ -21,6 +21,10 @@ type DaimyoService struct {
 	relationsService RelationsServiceMethods
 }
 
+func NewDaimyoService(cardsService CardRights, userService usersService.UsersRepositoryService, relationsService RelationsServiceMethods) *DaimyoService {
+	return &DaimyoService{cardsService: cardsService, userService: userService, relationsService: relationsService}
+}
+
 func (s *DaimyoService) GetCardsList(ctx context.Context, ownerID int) ([]entity.Card, error) {
 	return s.cardsService.GetCardsList(ctx, ownerID)
 }

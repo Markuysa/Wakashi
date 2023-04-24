@@ -4,14 +4,14 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"tgBotIntern/app/pkg/auth/database"
 	"tgBotIntern/app/pkg/auth/domain"
-	"tgBotIntern/app/pkg/auth/tokenDb"
 	"time"
 )
 
 func TestNewTokenService(t *testing.T) {
 	type args struct {
-		tokenRepository tokenDb.TokenRepos
+		tokenRepository database.TokenRepos
 	}
 	tests := []struct {
 		name string
@@ -31,7 +31,7 @@ func TestNewTokenService(t *testing.T) {
 
 func TestTokenService_GetUserSession(t *testing.T) {
 	type fields struct {
-		TokenRepository tokenDb.TokenRepos
+		TokenRepository database.TokenRepos
 	}
 	type args struct {
 		ctx      context.Context
@@ -65,7 +65,7 @@ func TestTokenService_GetUserSession(t *testing.T) {
 
 func TestTokenService_NewJWT(t *testing.T) {
 	type fields struct {
-		TokenRepository tokenDb.TokenRepos
+		TokenRepository database.TokenRepos
 	}
 	type args struct {
 		username string
@@ -100,7 +100,7 @@ func TestTokenService_NewJWT(t *testing.T) {
 
 func TestTokenService_NewRefreshToken(t *testing.T) {
 	type fields struct {
-		TokenRepository tokenDb.TokenRepos
+		TokenRepository database.TokenRepos
 	}
 	tests := []struct {
 		name    string
@@ -129,7 +129,7 @@ func TestTokenService_NewRefreshToken(t *testing.T) {
 
 func TestTokenService_ParseToken(t *testing.T) {
 	type fields struct {
-		TokenRepository tokenDb.TokenRepos
+		TokenRepository database.TokenRepos
 	}
 	type args struct {
 		ctx         context.Context
@@ -165,7 +165,7 @@ func TestTokenService_ParseToken(t *testing.T) {
 
 func TestTokenService_SetUserSession(t *testing.T) {
 	type fields struct {
-		TokenRepository tokenDb.TokenRepos
+		TokenRepository database.TokenRepos
 	}
 	type args struct {
 		ctx      context.Context

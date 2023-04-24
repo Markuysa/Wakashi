@@ -7,7 +7,11 @@ type CollectorRights interface {
 }
 
 type CollectorService struct {
-	cardService CardService
+	cardService CardRights
+}
+
+func NewCollectorService(cardService CardRights) *CollectorService {
+	return &CollectorService{cardService: cardService}
 }
 
 func (c *CollectorService) HandleDaimyoIncreasementRequest(ctx context.Context, incValue float64) error {

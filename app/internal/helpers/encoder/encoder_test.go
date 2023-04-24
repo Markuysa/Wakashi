@@ -3,7 +3,7 @@ package encoder
 import "testing"
 
 func TestIsMatch(t *testing.T) {
-	password, _ := EncodePassword("islam20011")
+	password, _ := Encode("islam20011")
 	type args struct {
 		encoded  string
 		original string

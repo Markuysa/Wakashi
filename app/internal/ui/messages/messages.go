@@ -30,4 +30,18 @@ const (
 	2673 - Tinkoff
 	3292 - Raiffeisenbank
 `
+	AdminDoc_bindSlave = `
+	To bind slave you should know their usernames.
+	To bind use command: /admin_bindSlave master_username=... slave_username=...
+	For example, /admin_bindSlave master_username=Markuysa slave_username=Makaroni1234
+	Notice that you can bind only HIGHER-LEVEL role with LOWER-LEVEL. For example, Shogun with Daimyo,
+	Daimyo with Samurai etc.
+`
+	AdminDoc_bindCardToDaimyo = `
+	To bind card to dimyo you should know their usernames.
+	To bind use command: /admin_bindSlave master_username=... slave_username=...
+	For example, /admin_bindSlave master_username=Markuysa slave_username=Makaroni1234
+	Notice that you can bind only HIGHER-LEVEL role with LOWER-LEVEL. For example, Shogun with Daimyo,
+	Daimyo with Samurai etc.
+`
 )

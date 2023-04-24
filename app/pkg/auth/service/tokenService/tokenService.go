@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go/v4"
 	"math/rand"
+	"tgBotIntern/app/pkg/auth/database"
 	"tgBotIntern/app/pkg/auth/domain"
-	"tgBotIntern/app/pkg/auth/tokenDb"
 	"time"
 )
 
@@ -27,7 +27,7 @@ type Tokens struct {
 }
 
 type TokenService struct {
-	TokenRepository tokenDb.TokenRepos
+	TokenRepository database.TokenRepos
 }
 
 func (s *TokenService) ResetUserSession(ctx context.Context, username string) error {
@@ -41,7 +41,7 @@ func (s *TokenService) SetCurrentActiveUser(ctx context.Context, username string
 func (s *TokenService) SetUserSession(ctx context.Context, username string, session domain.Session) error {
 	return s.TokenRepository.SaveSession(ctx, username, session)
 }
-func NewTokenService(tokenRepository tokenDb.TokenRepos) *TokenService {
+func NewTokenService(tokenRepository database.TokenRepos) *TokenService {
 
 	return &TokenService{TokenRepository: tokenRepository}
 }

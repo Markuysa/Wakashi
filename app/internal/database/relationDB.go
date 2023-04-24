@@ -2,14 +2,21 @@ package database
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gopkg.in/hedzr/errors.v3"
 )
 
-type RelationDB interface {
-	BindEntities(ctx context.Context, masterUsername, slaveUsername string) error
+type RelationDatabase interface {
+	BindEntities(ctx context.Context, master, slave int) error
+}
+type RelationRepository struct {
+	db *pgxpool.Pool
 }
 
-func (db *BotDatabase) BindEntities(ctx context.Context, masterUsername, slaveUsername string) error {
+func NewRelationDB(db *pgxpool.Pool) *RelationRepository {
+	return &RelationRepository{db: db}
+}
+func (db *RelationRepository) BindEntities(ctx context.Context, master, slave int) error {
 	query := `
 	insert into relation(
 	                    master_id,
@@ -18,15 +25,7 @@ func (db *BotDatabase) BindEntities(ctx context.Context, masterUsername, slaveUs
 	         $1,$2
 	)
 `
-	master, err := db.GetUserID(ctx, masterUsername)
-	if err != nil {
-		return errors.New("cannot find the master")
-	}
-	slave, err := db.GetUserID(ctx, slaveUsername)
-	if err != nil {
-		return errors.New("cannot find the slave")
-	}
-	_, err = db.db.Query(ctx, query, master, slave)
+	_, err := db.db.Query(ctx, query, master, slave)
 	if err != nil {
 		return errors.New("failed to bind entities:%v", err)
 	}

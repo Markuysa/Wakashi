@@ -26,15 +26,4 @@ func New() (*Config, error) {
 		User:     viper.GetString("database.User"),
 		Password: viper.GetString("database.password"),
 	}, nil
-	//yamlFile, err := os.ReadFile(filePath)
-	//if err != nil {
-	//	return nil, errors.New("failed to read config file: %v", err)
-	//}
-	//config := make(map[string]Config)
-	//
-	//err = yaml.Unmarshal(yamlFile, &config)
-	//if err != nil {
-	//	return nil, errors.New("failed to unmarshall config yaml:%v", err)
-	//}
-	//return config, nil
 }

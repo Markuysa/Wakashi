@@ -6,3 +6,6 @@ database:
   user: postgres
 telegram:
   apiToken: 5823980070:AAGDNAvLjNmchpI80BAmrH1zaOM8InuBOk8
+sessions:
+  host: localhost
+  port: 6379

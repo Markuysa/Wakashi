@@ -18,17 +18,21 @@ type UsersRepositoryService interface {
 	IsUserSessionValid(ctx context.Context, username string, roleID int) (bool, error)
 	GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error)
 	GetUser(ctx context.Context, username string) (*entity.User, error)
+	GetUserID(ctx context.Context, username string) (int, error)
 }
 
 type UsersService struct {
-	repos           database.TelegramDB
+	repos           database.UsersDatabase
 	tokenManager    tokenService.TokenManager
 	refreshTokenTTL time.Duration
 	accessTokenTTL  time.Duration
 }
 
-func NewUsersService(repos *database.BotDatabase, tokenManager tokenService.TokenManager) *UsersService {
-	return &UsersService{repos: repos, tokenManager: tokenManager}
+func NewUsersService(repos database.UsersDatabase, tokenManager tokenService.TokenManager, refreshTokenTTL time.Duration, accessTokenTTL time.Duration) *UsersService {
+	return &UsersService{repos: repos, tokenManager: tokenManager, refreshTokenTTL: refreshTokenTTL, accessTokenTTL: accessTokenTTL}
+}
+func (u *UsersService) GetUserID(ctx context.Context, username string) (int, error) {
+	return u.repos.GetUserID(ctx, username)
 }
 func (u *UsersService) GetUser(ctx context.Context, username string) (*entity.User, error) {
 	return u.repos.GetUser(ctx, username)

@@ -19,14 +19,19 @@ type AdministratorRights interface {
 	CreateEntity(ctx context.Context, user entity.User) error
 	CreateCard(ctx context.Context, card entity.Card) error
 	BindSlave(ctx context.Context, masterUsername, slaveUsername string) error
-	BindCardToDaimyo(ctx context.Context, daimyoID, cardNumber int) error
-	GetEntityReport(ctx context.Context, entityID int) (*entity.Report, error)
+	BindCardToDaimyo(ctx context.Context, daimyoUsername, cardNumber string) error
+	GetEntityReport(ctx context.Context, userName string) (*entity.Report, error)
 }
 
 type AdministratorService struct {
-	usersService    usersService.UsersService
-	cardService     CardService
-	relationService RelationsServiceMethods
+	usersService        usersService.UsersRepositoryService
+	cardService         CardRights
+	relationService     RelationsServiceMethods
+	transactionsService TransactionProcessor
+}
+
+func NewAdministratorService(usersService usersService.UsersRepositoryService, cardService CardRights, relationService RelationsServiceMethods, transactionsService TransactionProcessor) *AdministratorService {
+	return &AdministratorService{usersService: usersService, cardService: cardService, relationService: relationService, transactionsService: transactionsService}
 }
 
 func (a *AdministratorService) CreateEntity(ctx context.Context, user entity.User) error {
@@ -36,8 +41,8 @@ func (a *AdministratorService) CreateEntity(ctx context.Context, user entity.Use
 func (a *AdministratorService) CreateCard(ctx context.Context, card entity.Card) error {
 	return a.cardService.CreateCard(ctx, card)
 }
-func (a *AdministratorService) BindCardToDaimyo(ctx context.Context, daimyoID, cardNumber int) error {
-	return a.cardService.BindToDaimyo(ctx, cardNumber, daimyoID)
+func (a *AdministratorService) BindCardToDaimyo(ctx context.Context, daimyoUsername, cardNumber string) error {
+	return a.cardService.BindToDaimyo(ctx, cardNumber, daimyoUsername)
 }
 
 func (a *AdministratorService) BindSlave(ctx context.Context, masterUsername, slaveUsername string) error {
@@ -50,20 +55,36 @@ func (a *AdministratorService) GetEntityReport(ctx context.Context, userName str
 	}
 	switch user.Role {
 	// maybe calculate turnover of shogun
+	case roles.Administrator:
+		{
+			return entity.NewReport(
+				user.Username, user.Role, []entity.Transaction{},
+			), nil
+		}
 	case roles.Shogun:
 		{
 			return entity.NewReport(
-				user.Username, user.Role, -1,
+				user.Username, user.Role, []entity.Transaction{},
 			), nil
 		}
 	case roles.Daimyo:
 		{
-			turnover, err := a.cardService.GetTurnover(ctx, userName)
+			transactionsList, err := a.transactionsService.GetTransactions(ctx, userName)
 			if err != nil {
 				return nil, err
 			}
 			return entity.NewReport(
-				user.Username, user.Role, turnover,
+				user.Username, user.Role, transactionsList,
+			), nil
+		}
+	case roles.Samurai:
+		{
+			transactionsList, err := a.transactionsService.GetTransactions(ctx, userName)
+			if err != nil {
+				return nil, err
+			}
+			return entity.NewReport(
+				user.Username, user.Role, transactionsList,
 			), nil
 		}
 	default:

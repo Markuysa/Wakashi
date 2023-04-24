@@ -6,21 +6,50 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"strings"
 	"tgBotIntern/app/internal/constants/roles"
+	"tgBotIntern/app/internal/service"
 	"tgBotIntern/app/internal/telegram/bot"
-	"tgBotIntern/app/internal/telegram/helpers"
 	"tgBotIntern/app/internal/ui/messages"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
 type MessageHandler struct {
-	tgClient     *bot.TgClientWrapper
-	usersService usersService.UsersRepositoryService
-	tokenRepos   tokenService.TokenManager
+	tgClient           *bot.TgClientWrapper
+	usersService       usersService.UsersRepositoryService
+	tokenRepos         tokenService.TokenManager
+	adminService       service.AdministratorRights
+	shogunService      service.ShogunRights
+	daimyoService      service.DaimyoRights
+	samuraiService     service.SamuraiRights
+	collectorService   service.CollectorRights
+	cardService        service.CardRights
+	relationService    service.RelationsServiceMethods
+	transactionService service.TransactionProcessor
 }
 
-func NewMessageHandler(tgClient *bot.TgClientWrapper, usersService usersService.UsersRepositoryService, tokenRepos tokenService.TokenManager) *MessageHandler {
-	return &MessageHandler{tgClient: tgClient, usersService: usersService, tokenRepos: tokenRepos}
+func NewMessageHandler(tgClient *bot.TgClientWrapper,
+	usersService usersService.UsersRepositoryService,
+	tokenRepos tokenService.TokenManager,
+	adminService service.AdministratorRights,
+	shogunService service.ShogunRights,
+	daimyoService service.DaimyoRights,
+	samuraiService service.SamuraiRights,
+	collectorService service.CollectorRights,
+	cardService service.CardRights,
+	relationService service.RelationsServiceMethods,
+	transactionService service.TransactionProcessor) *MessageHandler {
+	return &MessageHandler{tgClient: tgClient,
+		usersService:       usersService,
+		tokenRepos:         tokenRepos,
+		adminService:       adminService,
+		shogunService:      shogunService,
+		daimyoService:      daimyoService,
+		samuraiService:     samuraiService,
+		collectorService:   collectorService,
+		cardService:        cardService,
+		relationService:    relationService,
+		transactionService: transactionService,
+	}
 }
 
 // SendMessage sends a message to user
@@ -55,10 +84,10 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 		return h.handleAdminCreateEntity(ctx, msg, message)
 	case "admin_createCard":
 		return h.handleAdminCreateCard(ctx, msg, message)
-	case "admin_bindDaimyo":
-		return h.handleAdminBindDaimyo(ctx, msg, message)
 	case "admin_bindSlave":
-		return h.handleAdminVindSlave(ctx, msg, message)
+		return h.handleAdminBindSlave(ctx, msg, message)
+	case "admin_bindCard":
+		return h.handleAdminBindCardToDaimyo(ctx, msg, message)
 	case "admin_entityData":
 		return h.handleAdminEntityData(ctx, msg, message)
 
@@ -122,14 +151,14 @@ func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageCo
 	}
 	username := message.From.UserName
 	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	role, _ := h.usersService.GetRoleID(ctx, username)
+	//role, _ := h.usersService.GetRoleID(ctx, username)
 	tokens, err := h.usersService.AuthorizeUser(ctx, username, password)
 	if err != nil {
 		msg.Text = "failed to authorize:" + err.Error()
 		return h.SendMessage(msg)
 	}
 	msg.Text = "Successfully authorized! Your access token:" + tokens.AccessToken
-	msg.ReplyMarkup = helpers.GetKeyboard(role)
+	//msg.ReplyMarkup = helpers.GetKeyboard(role)
 	return h.SendMessage(msg)
 }
 func (h *MessageHandler) handleExit(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
@@ -172,6 +201,11 @@ func (h *MessageHandler) handleDefaultCommands(ctx context.Context, msg tgbotapi
 	case "create card":
 		{
 			msg.Text = messages.AdminDoc_createCard
+			return h.SendMessage(msg)
+		}
+	case "bind slave to master":
+		{
+			msg.Text = messages.AdminDoc_bindSlave
 			return h.SendMessage(msg)
 		}
 	}

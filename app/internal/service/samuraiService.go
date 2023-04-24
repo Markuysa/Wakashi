@@ -6,6 +6,12 @@ type SamuraiRights interface {
 }
 
 type SamuraiService struct {
+	relationService RelationsServiceMethods
+	cardsService    CardRights
+}
+
+func NewSamuraiService(relationService RelationsServiceMethods, cardsService CardRights) *SamuraiService {
+	return &SamuraiService{relationService: relationService, cardsService: cardsService}
 }
 
 func (s *SamuraiService) SetTurnover() error {

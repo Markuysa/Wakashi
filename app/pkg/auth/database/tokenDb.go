@@ -1,21 +1,15 @@
-package tokenDb
+package database
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"github.com/go-redis/redis/v8"
+	"tgBotIntern/app/pkg/auth/config"
 	"tgBotIntern/app/pkg/auth/domain"
 	"time"
 )
 
-type Bucket string
-
-const (
-	AccessTokens Bucket = "access_token"
-)
-
-// change to redis
 type TokenRepos interface {
 	SaveSession(ctx context.Context, username string, session domain.Session) error
 	SaveCurrentUser(ctx context.Context, username string) error
@@ -28,9 +22,15 @@ type TokenRepository struct {
 	sessionTTL time.Duration
 }
 
-func NewTokenRepository(db *redis.Client, sessionTTL time.Duration) *TokenRepository {
-	return &TokenRepository{db: db, sessionTTL: sessionTTL}
+func NewTokenRepository(config config.Config) *TokenRepository {
+	sessionTTL := 12 * time.Hour
+	client := redis.NewClient(&redis.Options{
+		Addr: config.Host + ":" + config.Port,
+		DB:   0,
+	})
+	return &TokenRepository{db: client, sessionTTL: sessionTTL}
 }
+
 func (t *TokenRepository) Remove(ctx context.Context, key string) error {
 	return t.db.Del(ctx, key).Err()
 }

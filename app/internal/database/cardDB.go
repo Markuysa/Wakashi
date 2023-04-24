@@ -2,11 +2,12 @@ package database
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gopkg.in/hedzr/errors.v3"
 	"tgBotIntern/app/internal/entity"
 )
 
-type CardsDB interface {
+type CardsDatabase interface {
 	GetCard(ctx context.Context, cardNumber int) (*entity.Card, error)
 	AddCard(ctx context.Context, card entity.Card) error
 	BindCard(ctx context.Context, cardNumber int, ownerID int) error
@@ -15,8 +16,15 @@ type CardsDB interface {
 	IncreaseTotal(ctx context.Context, incValue float64) error
 	CalculateTurnover(ctx context.Context, username string) (float64, error)
 }
+type CardsRepository struct {
+	db *pgxpool.Pool
+}
 
-func (db *BotDatabase) CalculateTurnover(ctx context.Context, username string) (float64, error) {
+func NewCardsDB(db *pgxpool.Pool) *CardsRepository {
+	return &CardsRepository{db: db}
+}
+
+func (db *CardsRepository) CalculateTurnover(ctx context.Context, username string) (float64, error) {
 	query := `
 		select SUM(total) from card inner join users u on u.id = card.owner_id
 		where username=$1
@@ -29,11 +37,11 @@ func (db *BotDatabase) CalculateTurnover(ctx context.Context, username string) (
 	}
 	return total, nil
 }
-func (db *BotDatabase) IncreaseTotal(ctx context.Context, incValue float64) error {
+func (db *CardsRepository) IncreaseTotal(ctx context.Context, incValue float64) error {
 
 	return nil
 }
-func (db *BotDatabase) SetCardTotal(ctx context.Context, total float64, number int) error {
+func (db *CardsRepository) SetCardTotal(ctx context.Context, total float64, number int) error {
 	query := `
 		update card
 		set total=$1
@@ -42,7 +50,7 @@ func (db *BotDatabase) SetCardTotal(ctx context.Context, total float64, number i
 	_, err := db.db.Query(ctx, query, total, number)
 	return err
 }
-func (db *BotDatabase) GetCard(ctx context.Context, cardNumber int) (*entity.Card, error) {
+func (db *CardsRepository) GetCard(ctx context.Context, cardNumber int) (*entity.Card, error) {
 
 	query := `
 	select bank_id,card_number,card_limit,owner_id,cvv_code from card
@@ -55,7 +63,7 @@ func (db *BotDatabase) GetCard(ctx context.Context, cardNumber int) (*entity.Car
 	}
 	return &card, nil
 }
-func (db *BotDatabase) AddCard(ctx context.Context, card entity.Card) error {
+func (db *CardsRepository) AddCard(ctx context.Context, card entity.Card) error {
 
 	query := `
 	insert into card(
@@ -79,7 +87,7 @@ func (db *BotDatabase) AddCard(ctx context.Context, card entity.Card) error {
 	}
 	return nil
 }
-func (db *BotDatabase) BindCard(ctx context.Context, cardNumber int, ownerID int) error {
+func (db *CardsRepository) BindCard(ctx context.Context, cardNumber int, ownerID int) error {
 	_, err := db.GetCard(ctx, cardNumber)
 	if err != nil {
 		return errors.New("card doesn't exist")
@@ -95,7 +103,7 @@ func (db *BotDatabase) BindCard(ctx context.Context, cardNumber int, ownerID int
 	}
 	return nil
 }
-func (db *BotDatabase) GetCardsList(ctx context.Context, ownerID int) ([]entity.Card, error) {
+func (db *CardsRepository) GetCardsList(ctx context.Context, ownerID int) ([]entity.Card, error) {
 	query := `
 	select * from card
 	where owner_id=$1

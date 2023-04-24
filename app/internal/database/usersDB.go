@@ -2,12 +2,13 @@ package database
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gopkg.in/hedzr/errors.v3"
 	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/internal/helpers/encoder"
 )
 
-type UsersDB interface {
+type UsersDatabase interface {
 	AddUser(ctx context.Context, password, username string, role int) error
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserRoleID(ctx context.Context, username string) (int, error)
@@ -15,8 +16,15 @@ type UsersDB interface {
 	GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error)
 	GetUserID(ctx context.Context, username string) (int, error)
 }
+type UsersRepository struct {
+	db *pgxpool.Pool
+}
 
-func (db *BotDatabase) GetUserID(ctx context.Context, username string) (int, error) {
+func NewUsersDB(db *pgxpool.Pool) *UsersRepository {
+	return &UsersRepository{db: db}
+}
+
+func (db *UsersRepository) GetUserID(ctx context.Context, username string) (int, error) {
 	query := `
 		select id from users
 		where username=$1
@@ -29,7 +37,7 @@ func (db *BotDatabase) GetUserID(ctx context.Context, username string) (int, err
 	return userID, nil
 }
 
-func (u *BotDatabase) GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error) {
+func (u *UsersRepository) GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error) {
 	query := `
 	select username,role,password from users 
 	inner join relation r on users.id = r.slave_id
@@ -51,7 +59,7 @@ func (u *BotDatabase) GetSlavesList(ctx context.Context, masterUsername string, 
 }
 
 // AddUser method creates new entry in the users table of the database
-func (db *BotDatabase) AddUser(ctx context.Context, password, username string, role int) error {
+func (db *UsersRepository) AddUser(ctx context.Context, password, username string, role int) error {
 
 	query := `
 		insert into users(
@@ -62,7 +70,7 @@ func (db *BotDatabase) AddUser(ctx context.Context, password, username string, r
 				 $1,$2,$3
 		)
 	`
-	password, err := encoder.EncodePassword(password)
+	password, err := encoder.Encode(password)
 	if err != nil {
 		return errors.New("error of adding the user:%v", err)
 	}
@@ -78,7 +86,7 @@ func (db *BotDatabase) AddUser(ctx context.Context, password, username string, r
 }
 
 // GetUser method returns an object of user from the database
-func (db *BotDatabase) GetUser(ctx context.Context, username string) (*entity.User, error) {
+func (db *UsersRepository) GetUser(ctx context.Context, username string) (*entity.User, error) {
 
 	query := `
 		select username,password,role from users
@@ -93,7 +101,7 @@ func (db *BotDatabase) GetUser(ctx context.Context, username string) (*entity.Us
 }
 
 // GetUserRoleID returns string role of the user with given username
-func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int, error) {
+func (db *UsersRepository) GetUserRoleID(ctx context.Context, username string) (int, error) {
 
 	//query := `
 	//	select r.role from users
@@ -113,7 +121,7 @@ func (db *BotDatabase) GetUserRoleID(ctx context.Context, username string) (int,
 	return role, nil
 }
 
-func (db *BotDatabase) IsExist(ctx context.Context, username, password string) (*entity.User, error) {
+func (db *UsersRepository) IsExist(ctx context.Context, username, password string) (*entity.User, error) {
 	user, err := db.GetUser(ctx, username)
 	if err != nil {
 		return nil, errors.New(" incorrect username")
