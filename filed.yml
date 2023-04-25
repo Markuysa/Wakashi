@@ -3,9 +3,9 @@ pipelines:
     input:
       type: file
       persistence_mode: async
-      watching_dir: /tmp/logs
-      filename_pattern: log.txt
-      offsets_file: /tmp/offsets.yaml
+      watching_dir: app/internal/logs
+      filename_pattern: data/log.txt
+      offsets_file: offsets.yaml
       offsets_op: reset
 
     actions:

@@ -3,8 +3,10 @@ package config
 import (
 	"errors"
 	"github.com/spf13/viper"
+	"os"
 )
 
+// Config - struct of database configurations
 type Config struct {
 	DBName   string `yaml:"DBName"`
 	Host     string `yaml:"host"`
@@ -13,8 +15,9 @@ type Config struct {
 	Password string `yaml:"password"`
 }
 
+// New creates new db config
 func New() (*Config, error) {
-	filePath := "config.yml"
+	filePath := os.Getenv("db_config_path")
 	viper.SetConfigFile(filePath)
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, errors.New("cannot find config file")

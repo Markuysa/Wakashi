@@ -7,6 +7,11 @@ import (
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
+// RelationsServiceMethods is an interface that represents the methods of
+// RelationsService structure - the use case layer of program to interact with relations
+// btwn entities
+// The Bind method is used to bind two entities with one another
+// The GetMasterUsername method is used to get master's username by slave's username
 type RelationsServiceMethods interface {
 	Bind(ctx context.Context, masterUsername, slaveUsername string) error
 	GetMasterUsername(ctx context.Context, slaveUsername string) (string, error)

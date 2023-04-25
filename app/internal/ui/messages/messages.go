@@ -7,9 +7,20 @@ const (
 	LoginMessage = `
 	To login you should use command:
 	/login password=your_password
+	You can also use our web-site to authorize, just follow the link:
+	<a href="http://127.0.0.1:8080/login">Login</a>
 `
 	RegisterMessage = `
-	
+	To register you should use command:
+	/register password=your_password role=your_role
+`
+	ResetMessage = `
+	If you forgot your password you should use the token, that 
+	was given to you after login.
+	/reset_password token=your_token new_password=your_password
+`
+	ExitMessage = `
+	To exit from session use: /exit command
 `
 	GreetingMessage = `
 		Hi! It's a role game where u can choose your role and play with other people
@@ -20,8 +31,8 @@ const (
 			⭐ Samurai - binds to one Daimyo and performs some useful actions
 			⭐ Collector - handles daimyo card requests
 		🔐 To start the game you should register then authorize 
-		To register use the endpoint: /register username=.. password=.. role=..
-		To login user the endpoint: /login username=.. password=..
+		To register use the endpoint: /register password=.. role=..
+		To login user the endpoint: /login  password=..
 		Sya!👋
 `
 	// Admin

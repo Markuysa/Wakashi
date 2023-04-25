@@ -5,6 +5,10 @@ import (
 	"errors"
 )
 
+// CollectorRights is an interface that provides contract for CollectorService
+// struct represents one of the parts of use-case layer
+// The HandleDaimyoIncreasementRequest method is used to handle the daimyo request
+// and change the card balance
 type CollectorRights interface {
 	HandleDaimyoIncreasementRequest(ctx context.Context, requestID int) error
 }

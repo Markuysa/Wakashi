@@ -7,6 +7,15 @@ import (
 	"tgBotIntern/app/internal/entity"
 )
 
+// CardsDatabase is an interface of database contain all the cards in bot
+// The GetCard method is used to get access to card by card number
+// The AddCard method is used to add new card to db
+// The BindCard method is used to bind new card to user
+// THe GetCardsList method is used to get all cards of user with id = ownerID
+// The SetCardTotal method is used to set total money remain on card
+// The IncreaseTotal method is used to increase/decrease balance of card
+// The CalculateTurnover method is used to calculate the turnover of user with given ID
+// The GetCardsTotal method is used to get the total money amount remain on user cards
 type CardsDatabase interface {
 	GetCard(ctx context.Context, cardNumber int) (*entity.Card, error)
 	AddCard(ctx context.Context, card entity.Card) error
@@ -17,13 +26,17 @@ type CardsDatabase interface {
 	CalculateTurnover(ctx context.Context, userID, requestFromID int) (float64, error)
 	GetCardsTotal(ctx context.Context, username string) (float64, error)
 }
+
+// CardsRepository - struct, that implements all the methods of cards db
 type CardsRepository struct {
 	db *pgxpool.Pool
 }
 
+// NewCardsDB returns new object of cards db
 func NewCardsDB(db *pgxpool.Pool) *CardsRepository {
 	return &CardsRepository{db: db}
 }
+
 func (db *CardsRepository) GetCardsTotal(ctx context.Context, username string) (float64, error) {
 	query := `
 		select SUM(total) from card inner join users u on u.id = card.owner_id

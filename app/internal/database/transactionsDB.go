@@ -7,6 +7,16 @@ import (
 	"tgBotIntern/app/internal/entity"
 )
 
+// TransactionDatabase is an interface that provides contract to
+// a structure that implements the functionality of a transaction table in the database
+// The GetUsersTransactionsInWorkTime method is used to get transactions, that were created
+// in as part of today's work shift
+// The GetTurnover method is used to calculate the today's work shift turnover
+// The AddTransactionRequest method is used to create new transaction request with unhandled status
+// to delegate it to the collectors
+// The GetAllUnhandledTransactions is used to get all transactions with status: unhandled
+// The HandleTransaction method is used to mark the transaction as handled
+// The GetTransactionByID method is used to get transaction data by id
 type TransactionDatabase interface {
 	GetUsersTransactionsInWorkTime(ctx context.Context, owerID int) ([]entity.Transaction, error)
 	GetTurnover(ctx context.Context, ownerID int) (float64, error)
@@ -142,7 +152,7 @@ func (t *TransactionRepository) GetTurnover(ctx context.Context, ownerID int) (f
 
 	query := `
 	select SUM(operation_value) from transactions
-	where owner_id=$1
+	where owner_id=$1 and transaction_date BETWEEN current_date + time '08:00:00' AND CURRENT_DATE + time '12:00:00'
 `
 	var turover float64
 

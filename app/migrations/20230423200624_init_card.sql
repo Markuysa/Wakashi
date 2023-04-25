@@ -13,7 +13,6 @@ create table card
     cvv_code    text   not null,
     total       double precision default 0
 );
-
 alter table card
     owner to postgres;
 

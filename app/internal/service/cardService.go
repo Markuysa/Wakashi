@@ -9,6 +9,19 @@ import (
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
+// CardRights is an interface that provides contract to CardService struct
+// that represents use-case layer to interact with bank cards
+// The BindToDaimyo method is used to bind card to daimyo
+// The CreateCard method is used to create new bank card
+// The GetCardsList method is used to get cards list of username with given id
+// The SetTotal method is used to set card balance
+// The HandleCardTotalInc method is used to update card balance after completing transaction
+// The GetTurnover method is used to get turnover of the card with given owner and request dealer id's
+// Which means that not only the owner of card (in out case daimyo) can create requests to replenish the balance
+// Also samurai have that right, so we need to use requestDealer username to get access to person, who
+// created the replenishment request
+// The GetCard method is used to get card by its number
+// The GetTotal method is used to get balance of the user card with given username
 type CardRights interface {
 	BindToDaimyo(ctx context.Context, cardNumber, ownerUsername string) error
 	CreateCard(ctx context.Context, card entity.Card) error

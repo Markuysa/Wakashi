@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/joho/godotenv"
 	"gopkg.in/hedzr/errors.v3"
 	"log"
+	"os"
 	"tgBotIntern/app/internal/database"
 	"tgBotIntern/app/internal/database/config"
+	logger2 "tgBotIntern/app/internal/logger"
 	"tgBotIntern/app/internal/service"
 	"tgBotIntern/app/internal/telegram/bot"
 	telegramConfig "tgBotIntern/app/internal/telegram/config"
@@ -25,11 +29,19 @@ const (
 
 func main() {
 	ctx := context.Background()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	fmt.Println(os.Getenv("tg_config_path"))
 	tgConfig, err := telegramConfig.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	logger, err := logger2.InitLogger()
+	if err != nil {
+		log.Fatal(err)
+	}
 	// DATABASE - ENTITIES
 	dbConfig, err := config.New()
 	if err != nil {
@@ -79,13 +91,14 @@ func main() {
 		cardsService,
 		relationService,
 		transactionService,
+		logger,
 	)
 
 	// WORKERS
 	msgListenerWorker := worker.NewMessageListenerWorker(msgListener, msgHandler)
 
 	// Start auth server
-	authServer := server.NewAuthSerer(AuthServerPort, sessionsDB, userService)
+	authServer := server.NewAuthSerer(AuthServerPort, sessionsDB, userService, logger)
 	go func() {
 		err := authServer.Start()
 		if err != nil {
@@ -94,7 +107,8 @@ func main() {
 	}()
 
 	// Start receiving messages
-	log.Println("started telegram bot")
+	logger.Info("Started telegram bot")
+
 	err = msgListenerWorker.Run(ctx)
 	if err != nil {
 		log.Fatal(err)

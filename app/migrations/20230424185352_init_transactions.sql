@@ -4,15 +4,20 @@
 -- auto-generated definition
 create table transactions
 (
+    id               bigserial
+        primary key,
     card_id          bigint                not null
-        primary key
         references card,
     owner_id         bigint
         references users,
     operation_value  double precision,
     transaction_date timestamp,
-    status           boolean default false not null
+    status           boolean default false not null,
+    request_from     integer
+        constraint transactions_users__fk
+            references users
 );
+
 
 alter table transactions
     owner to postgres;

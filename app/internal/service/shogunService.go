@@ -6,6 +6,10 @@ import (
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
+// ShogunRights is an interface that represents the methods of
+// ShogunService structure - the use case layer of program to interact with shogun entities
+// The GetSlavesList method is used to get slaves list of shogun (daimyo, samurai)
+// The BindCardToDaimyo method is used to bind card to daimyo
 type ShogunRights interface {
 	GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error)
 	CreateCard(ctx context.Context, card entity.Card) error

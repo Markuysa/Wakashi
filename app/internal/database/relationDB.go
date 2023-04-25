@@ -6,6 +6,9 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 )
 
+// RelationDatabase is an interface that provides contract to relation repository objects
+// The BindEntities method is used to bind two entities with each other
+// The GetMasterUsername method is used to get the master of user with given ID
 type RelationDatabase interface {
 	BindEntities(ctx context.Context, master, slave int) error
 	GetMasterUsername(ctx context.Context, slaveID int) (string, error)

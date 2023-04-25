@@ -9,6 +9,8 @@ import (
 )
 import "context"
 
+// Daimyo role requests handlers
+
 func (h *MessageHandler) handleDaimyoGetCards(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	cards, err := h.daimyoService.GetCardsList(ctx, message.From.UserName)
 	if err != nil {

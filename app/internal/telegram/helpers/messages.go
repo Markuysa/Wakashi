@@ -18,7 +18,7 @@ func FormTransaction(transaction entity.Transaction) string {
 }
 func FormReport(report *entity.Report) string {
 	result := fmt.Sprintf(
-		"Username:%v,\nRoleID:%v,\n,Transactions:\n",
+		"Username:%v,\nRoleID:%v,\nTransactions:\n",
 		report.Username,
 		report.RoleID,
 	)

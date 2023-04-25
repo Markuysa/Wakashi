@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/spf13/viper"
 	"gopkg.in/hedzr/errors.v3"
+	"os"
 )
 
 type Config struct {
@@ -11,7 +12,7 @@ type Config struct {
 
 // New creates new config object
 func New() (*Config, error) {
-	filePath := "config.yml"
+	filePath := os.Getenv("tg_config_path")
 	viper.SetConfigFile(filePath)
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, errors.New("cannot find config file")

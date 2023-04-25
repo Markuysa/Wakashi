@@ -14,6 +14,7 @@ const (
 	Card
 )
 
+// GetRoleID converts role string into internal integer roleID
 func GetRoleID(role string) int {
 	role = strings.ToLower(role)
 	switch role {
@@ -32,6 +33,9 @@ func GetRoleID(role string) int {
 	}
 	return -1
 }
+
+// GetRoleString converts internal roleID into string role to
+// show it to user
 func GetRoleString(role int) string {
 	switch role {
 	case 1:

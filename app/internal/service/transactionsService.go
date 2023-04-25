@@ -8,6 +8,10 @@ import (
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
 
+// TransactionProcessor is an interface that represents the methods of
+// TransactionsService structure - the use case layer of program to interact with card transactions
+// The GetUnhandledTransactions method is used to get all transactions marked as unhandled (status=false)
+// HandleTransaction method is used to set transaction as handled (status=true)
 type TransactionProcessor interface {
 	GetTransactions(ctx context.Context, username string) ([]entity.Transaction, error)
 	GetUnhandledTransactions(ctx context.Context) ([]entity.Transaction, error)

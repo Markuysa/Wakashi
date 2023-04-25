@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 	"tgBotIntern/app/pkg/auth/database"
 	"tgBotIntern/app/pkg/auth/handlers"
@@ -19,16 +20,20 @@ type AuthSerer struct {
 	port            string
 	ServerEngine    *gin.Engine
 	RequestHandlers handlers.AuthHandler
+	logger          *zap.Logger
 }
 
-func NewAuthSerer(port string, repository *database.TokenRepository, service *usersService.UsersService) *AuthSerer {
+func NewAuthSerer(port string, repository *database.TokenRepository, service *usersService.UsersService, logger *zap.Logger) *AuthSerer {
 	return &AuthSerer{
 		port:            port,
 		ServerEngine:    gin.New(),
 		RequestHandlers: handlers.NewTgBotAuth(service),
+		logger:          logger,
 	}
 }
+
 func (a *AuthSerer) setHandlers() {
+
 	a.ServerEngine.Handle(http.MethodPost, "/register", a.RequestHandlers.HandleRegister)
 	a.ServerEngine.Handle(http.MethodPost, "/login", a.RequestHandlers.HandleLogin)
 	a.ServerEngine.Handle(http.MethodGet, "/register", a.RequestHandlers.HandleGetRegisterPage)

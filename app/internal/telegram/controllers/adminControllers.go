@@ -11,7 +11,10 @@ import (
 	"tgBotIntern/app/internal/telegram/helpers"
 )
 
+// Administrator role requests controllers
+
 func (h *MessageHandler) handleAdminCreateEntity(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+
 	params := strings.Split(message.Text, " ")[1:]
 	if len(params) != 3 {
 		msg.Text = "not enough arguments in create entity command"
@@ -91,7 +94,15 @@ func (h *MessageHandler) handleAdminBindSlave(ctx context.Context, msg tgbotapi.
 		return h.SendMessage(msg)
 	}
 	master := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	if len(master) == 0 {
+		msg.Text = "The length of mater username should contain at least 1 symbol"
+		return h.SendMessage(msg)
+	}
 	slave := strings.TrimSpace(strings.Split(params[1], "=")[1])
+	if len(slave) == 0 {
+		msg.Text = "The length of slave username should contain at least 1 symbol"
+		return h.SendMessage(msg)
+	}
 	getMaster, err := h.usersService.GetUser(ctx, master)
 	if err != nil {
 		msg.Text = "User: " + master + " not found"
@@ -104,6 +115,7 @@ func (h *MessageHandler) handleAdminBindSlave(ctx context.Context, msg tgbotapi.
 	}
 	if getMaster.Role >= getSlave.Role {
 		msg.Text = "Role of user: " + getMaster.Username + " is less than or equal to " + getSlave.Username + "'s role"
+		return h.SendMessage(msg)
 	}
 	err = h.adminService.BindSlave(ctx, master, slave)
 	if err != nil {
@@ -126,7 +138,7 @@ func (h *MessageHandler) handleAdminBindCardToDaimyo(ctx context.Context, msg tg
 		return h.SendMessage(msg)
 	}
 	daimyoUsername := strings.TrimSpace(strings.Split(params[1], "=")[1])
-	if len(cardNumber) != 16 {
+	if len(daimyoUsername) == 0 {
 		msg.Text = "The length of daimyo username should contain at least 1 symbol"
 		return h.SendMessage(msg)
 	}

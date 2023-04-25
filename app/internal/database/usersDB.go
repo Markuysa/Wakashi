@@ -8,6 +8,15 @@ import (
 	"tgBotIntern/app/internal/helpers/encoder"
 )
 
+// UsersDatabase interface is an interface that provides contract to
+// a structure that implements the functionality of a users table in the database
+// The AddUser method is used to add new user into the user table
+// The GetUser method is used to get user info from the table
+// The GetUserRoleID method is used to get user's role identification from db
+// The IsExist method is used to check existence of user with given username and password
+// The GetSlavesList method is used to get all the slaves of user with given id's
+// The GetUserID method is used to get identification of user with given username
+// THe UpdatePassword method is used to reset old password of user
 type UsersDatabase interface {
 	AddUser(ctx context.Context, password, username string, role int) error
 	GetUser(ctx context.Context, username string) (*entity.User, error)

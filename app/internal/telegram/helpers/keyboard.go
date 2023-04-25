@@ -11,6 +11,7 @@ const (
 	RegisterButton = "Register"
 	Info           = "Info"
 	Exit           = "Exit"
+	ResetPassword  = "Reset"
 	// Administrator buttons titles
 	AdminCreateEntity      = "Create entity"
 	AdminCreateCard        = "Create card"
@@ -90,6 +91,7 @@ var (
 			tgbotapi.NewKeyboardButton(RegisterButton),
 			tgbotapi.NewKeyboardButton(Info),
 			tgbotapi.NewKeyboardButton(Exit),
+			tgbotapi.NewKeyboardButton(ResetPassword),
 		),
 	)
 )

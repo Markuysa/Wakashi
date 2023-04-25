@@ -10,6 +10,16 @@ import (
 	"time"
 )
 
+// DaimyoRights is an interface that represents the methods of
+// DaimyoService structure - the use case layer of program
+// The GetCardsList method is used to get bank cards of user
+// The CreateCardIncreasementRequest method is used to create request for card replenishment
+// and add it to transactions list with status: unhandled
+// The GetSamuraiList method is used to get all samurai slaves of daimyo
+// The SetCardsBalances method is used to set the balance of the card
+// The BindShogun method is used to bind daimyo with shogun
+// THe GetSamuraiTurnover method is used to get samurai turnover with given username
+// THe GetCardsTotal method is used to get user's summary cards balance
 type DaimyoRights interface {
 	GetCardsList(ctx context.Context, ownerUsername string) ([]entity.Card, error)
 	CreateCardIncreasementRequest(ctx context.Context, cardID int, increasementValue float64, ownerUsername string) error

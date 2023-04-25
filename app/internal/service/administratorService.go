@@ -41,7 +41,7 @@ func (a *AdministratorService) CreateEntity(ctx context.Context, user entity.Use
 func (a *AdministratorService) CreateCard(ctx context.Context, card entity.Card) error {
 	return a.cardService.CreateCard(ctx, card)
 }
-func (a *AdministratorService) BindCardToDaimyo(ctx context.Context, daimyoUsername, cardNumber string) error {
+func (a *AdministratorService) BindCardToDaimyo(ctx context.Context, cardNumber, daimyoUsername string) error {
 	return a.cardService.BindToDaimyo(ctx, cardNumber, daimyoUsername)
 }
 

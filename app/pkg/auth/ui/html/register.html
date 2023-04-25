@@ -110,7 +110,26 @@
 
         return true;
     }
+
     button = document.getElementById('login')
+    function wrongDataR(error){
+        document.getElementById('error-message').innerHTML = "Some error occurred:"+error+".Check username and password";
+        var username = document.getElementById('username');
+        var password = document.getElementById('password');
+        var role = document.getElementById('role');
+        username.value = ""
+        password.value = ""
+        role.value = ""
+    }
+    function checkStatusR(response){
+
+        if (response.status===200){
+            window.location.replace("https://t.me/InternTestTaskBot")
+        }else{
+            wrongDataR()
+        }
+
+    }
     button.addEventListener('click',(e)=>{
         e.preventDefault()
         if (validateForm()){
@@ -122,8 +141,7 @@
                 password: password,
                 role: role
             };
-            alert(JSON.stringify(data))
-            url = "http://localhost:8080/register"
+            url = "http://127.0.0.1:8080/register"
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -131,9 +149,8 @@
                 },
                 body: JSON.stringify(data)
             })
-                .then(response => alert(response.json()))
-                .then(data => alert(data))
-                .catch(error => alert(error));
+                .then(response => checkStatusR(response))
+                .catch(error =>wrongDataR(error));
         }
     })
 </script>

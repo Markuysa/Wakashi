@@ -1,0 +1,22 @@
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /register                 --> tgBotIntern/app/pkg/auth/handlers.AuthHandler.HandleRegister-fm (1 handlers)
+[GIN-debug] POST   /login                    --> tgBotIntern/app/pkg/auth/handlers.AuthHandler.HandleLogin-fm (1 handlers)
+[GIN-debug] GET    /register                 --> tgBotIntern/app/pkg/auth/handlers.AuthHandler.HandleGetRegisterPage-fm (1 handlers)
+[GIN-debug] GET    /login                    --> tgBotIntern/app/pkg/auth/handlers.AuthHandler.HandleGetLoginPage-fm (1 handlers)
+{"level":"info","ts":1682454271.0674217,"msg":"Started telegram bot"}
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+{"level":"info","ts":1682454425.3097444,"msg":"Endpoint: /admin_createCard called by Markuysa","Role":"administrator"}
+{"level":"info","ts":1682454425.7226722,"msg":"Endpoint: /admin_createCard called by Markuysa handled, status: OK","Role":"administrator"}
+{"level":"info","ts":1682454486.0205002,"msg":"Endpoint: /admin_bindCard called by Markuysa","Role":"administrator"}
+{"level":"info","ts":1682454486.1756582,"msg":"Endpoint: /admin_bindCard called by Markuysa handled, status: OK","Role":"administrator"}
+{"level":"info","ts":1682454495.5611036,"msg":"Endpoint: /admin_bindCard called by Markuysa","Role":"administrator"}
+{"level":"info","ts":1682454495.979154,"msg":"Endpoint: /admin_bindCard called by Markuysa handled, status: OK","Role":"administrator"}
+{"level":"info","ts":1682454523.8143885,"msg":"Endpoint: /admin_bindCard called by Markuysa","Role":"administrator"}
+{"level":"info","ts":1682454524.0520444,"msg":"Endpoint: /admin_bindCard called by Markuysa handled, status: OK","Role":"administrator"}
+{"level":"info","ts":1682454601.869427,"msg":"Endpoint: /admin_bindCard called by Markuysa","Role":"administrator"}
+{"level":"info","ts":1682454602.0822725,"msg":"Endpoint: /admin_bindCard called by Markuysa handled, status: OK","Role":"administrator"}

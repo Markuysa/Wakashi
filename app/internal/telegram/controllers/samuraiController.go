@@ -25,7 +25,7 @@ func (h *MessageHandler) handleSamuraiBindDaimyo(ctx context.Context, msg tgbota
 		return h.SendMessage(msg)
 	}
 	daimyoUsername := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	err := h.samuraiService.BindToDamiyo(ctx, daimyoUsername, message.From.UserName)
+	err := h.samuraiService.BindToDaimyo(ctx, daimyoUsername, message.From.UserName)
 	if err != nil {
 		msg.Text = "Cannot bind to Daimyo: " + err.Error()
 		return h.SendMessage(msg)

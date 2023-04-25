@@ -10,9 +10,15 @@ import (
 	"time"
 )
 
+// SamuraiRights is an interface that represents the methods of
+// SamuraiService structure - the use case layer of program to interact with samurai entities
+// The GetTurnover method is used to get turnover of the samurai
+// The BindToDaimyo method is used to bind samurai to daimyo
+// The CreateCardIncreasementRequest method is used to create request to collector to update
+// card balance
 type SamuraiRights interface {
 	GetTurnover(ctx context.Context, samuraiUsername string) (float64, error)
-	BindToDamiyo(ctx context.Context, masterUsername, slaveUsername string) error
+	BindToDaimyo(ctx context.Context, masterUsername, slaveUsername string) error
 	CreateCardIncreasementRequest(ctx context.Context, cardID int, increasementValue float64, ownerUsername string) error
 }
 
@@ -60,6 +66,6 @@ func (s *SamuraiService) GetTurnover(ctx context.Context, samuraiUsername string
 	return s.cardsService.GetTurnover(ctx, masterUsername, samuraiUsername)
 }
 
-func (s *SamuraiService) BindToDamiyo(ctx context.Context, masterUsername, slaveUsername string) error {
+func (s *SamuraiService) BindToDaimyo(ctx context.Context, masterUsername, slaveUsername string) error {
 	return s.relationService.Bind(ctx, masterUsername, slaveUsername)
 }

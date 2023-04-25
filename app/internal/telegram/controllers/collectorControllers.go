@@ -9,6 +9,7 @@ import (
 
 import "context"
 
+// Collector role requests handlers
 func (h *MessageHandler) handleCollectorIncreaseCard(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
 	if len(params) != 1 {

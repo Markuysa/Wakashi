@@ -4,18 +4,27 @@ import (
 	"context"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.uber.org/zap"
 	"strings"
 	"tgBotIntern/app/internal/constants/roles"
+	"tgBotIntern/app/internal/metrics"
 	"tgBotIntern/app/internal/service"
 	"tgBotIntern/app/internal/telegram/bot"
 	"tgBotIntern/app/internal/telegram/helpers"
 	"tgBotIntern/app/internal/ui/messages"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
 	"tgBotIntern/app/pkg/auth/service/usersService"
+	"time"
 )
 
+// MessageHandler struct is the main handlers layer, that
+// communicates with customer.
+// It contains services and uses them to interact with user
+// and handle the requests.
+// It encapsulates the entire business logic of the bot.
 type MessageHandler struct {
 	tgClient           *bot.TgClientWrapper
+	logger             *zap.Logger
 	usersService       usersService.UsersRepositoryService
 	tokenService       tokenService.TokenManager
 	adminService       service.AdministratorRights
@@ -38,7 +47,8 @@ func NewMessageHandler(tgClient *bot.TgClientWrapper,
 	collectorService service.CollectorRights,
 	cardService service.CardRights,
 	relationService service.RelationsServiceMethods,
-	transactionService service.TransactionProcessor) *MessageHandler {
+	transactionService service.TransactionProcessor,
+	logger *zap.Logger) *MessageHandler {
 	return &MessageHandler{tgClient: tgClient,
 		usersService:       usersService,
 		tokenService:       tokenRepos,
@@ -50,6 +60,7 @@ func NewMessageHandler(tgClient *bot.TgClientWrapper,
 		cardService:        cardService,
 		relationService:    relationService,
 		transactionService: transactionService,
+		logger:             logger,
 	}
 }
 
@@ -70,9 +81,12 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 	// Default commands
 	case "start":
 		msg.Text = messages.GreetingMessage
+		msg.ReplyMarkup = helpers.GetKeyboard(-1)
 		return h.SendMessage(msg)
 	case "register":
 		return h.handleRegister(ctx, msg, message)
+	case "reset_password":
+		return h.handleResetPassword(ctx, msg, message)
 	case "login":
 		return h.handleLogin(ctx, msg, message)
 	case "exit":
@@ -113,11 +127,13 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 		return h.checkRoleMiddleware(h.handleDaimyoGetCardsTotal, roles.Daimyo)(ctx, msg, message)
 	case "daimyo_bindShogun":
 		return h.checkRoleMiddleware(h.handleDaimyoBindShogun, roles.Daimyo)(ctx, msg, message)
+
 		// Samurai commands
 	case "samurai_getTurnover":
 		return h.checkRoleMiddleware(h.handleSamuraiGetTurnover, roles.Samurai)(ctx, msg, message)
 	case "samurai_bindDaimyo":
 		return h.checkRoleMiddleware(h.handleSamuraiBindDaimyo, roles.Samurai)(ctx, msg, message)
+
 	// Collector commands
 	case "collector_performInc":
 		return h.checkRoleMiddleware(h.handleCollectorIncreaseCard, roles.Collector)(ctx, msg, message)
@@ -132,13 +148,28 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 func (h *MessageHandler) checkRoleMiddleware(next func(context.Context, tgbotapi.MessageConfig, *tgbotapi.Message) error,
 	roleID int) func(context.Context, tgbotapi.MessageConfig, *tgbotapi.Message) error {
 	return func(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+		logMsg := fmt.Sprintf("Endpoint: /%s called by %s", message.Command(), message.From.UserName)
+		h.logger.Info(logMsg, zap.String("Role", roles.GetRoleString(roleID)))
 		isValid, err := h.usersService.IsUserSessionValid(ctx, message.From.UserName, roleID)
 		if err != nil {
 			msg.Text = "failed to get your status!"
 			return h.SendMessage(msg)
 		}
 		if isValid {
-			return next(ctx, msg, message)
+			startTime := time.Now()
+			err := next(ctx, msg, message)
+			duration := time.Since(startTime)
+			metrics.SummaryResponseTime.Observe(duration.Seconds())
+			metrics.HistogramResponseTime.
+				WithLabelValues("Status: OK").
+				Observe(duration.Seconds())
+			if err == nil {
+				logMsg := fmt.Sprintf("Endpoint: /%s called by %s handled", message.Command(), message.From.UserName)
+				h.logger.Info(logMsg, zap.String("Role", roles.GetRoleString(roleID)))
+				return nil
+			} else {
+				return err
+			}
 		} else {
 			msg.Text = "You don't have rights to call this endpoint!"
 			return h.SendMessage(msg)
@@ -174,6 +205,12 @@ func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageCo
 		return h.SendMessage(msg)
 	}
 	username := message.From.UserName
+	// ignoring the error because it occurs when there is no user authorized
+	userSession, _ := h.tokenService.GetUserSession(ctx, username)
+	if userSession != nil {
+		msg.Text = "You already authorized"
+		return h.SendMessage(msg)
+	}
 	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
 	role, _ := h.usersService.GetRoleID(ctx, username)
 	tokens, err := h.usersService.AuthorizeUser(ctx, username, password)
@@ -186,6 +223,7 @@ func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageCo
 	return h.SendMessage(msg)
 }
 
+// exit command
 func (h *MessageHandler) handleExit(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	err := h.tokenService.ResetUserSession(ctx, message.From.UserName)
 	if err != nil {
@@ -196,6 +234,7 @@ func (h *MessageHandler) handleExit(ctx context.Context, msg tgbotapi.MessageCon
 	return h.SendMessage(msg)
 }
 
+// status command
 func (h *MessageHandler) handleStatus(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	_, err := h.tokenService.GetUserSession(ctx, message.From.UserName)
 	if err != nil {
@@ -214,9 +253,10 @@ func (h *MessageHandler) handleStatus(ctx context.Context, msg tgbotapi.MessageC
 	return h.SendMessage(msg)
 }
 
+// reset command
 func (h *MessageHandler) handleResetPassword(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
-	if len(params) != 1 {
+	if len(params) != 2 {
 		msg.Text = "not enough arguments in create entity command"
 		return h.SendMessage(msg)
 	}
@@ -244,8 +284,31 @@ func (h *MessageHandler) handleResetPassword(ctx context.Context, msg tgbotapi.M
 		return h.SendMessage(msg)
 	}
 }
+
+// returns text information_docs about commands
 func (h *MessageHandler) handleDefaultCommands(msg tgbotapi.MessageConfig) error {
 	switch msg.Text {
+
+	case helpers.LoginButton:
+		{
+			msg.Text = messages.LoginMessage
+		}
+	case helpers.RegisterButton:
+		{
+			msg.Text = messages.RegisterMessage
+		}
+	case helpers.Info:
+		{
+			msg.Text = messages.InfoMessage
+		}
+	case helpers.Exit:
+		{
+			msg.Text = messages.ExitMessage
+		}
+	case helpers.ResetPassword:
+		{
+			msg.Text = messages.ResetMessage
+		}
 	// Admin buttons handlers
 	case helpers.AdminCreateEntity:
 		{
