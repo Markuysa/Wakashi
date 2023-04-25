@@ -19,6 +19,7 @@ type UsersRepositoryService interface {
 	GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error)
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserID(ctx context.Context, username string) (int, error)
+	UpdatePassword(ctx context.Context, name string, password string) error
 }
 
 type UsersService struct {
@@ -31,6 +32,9 @@ type UsersService struct {
 func NewUsersService(repos database.UsersDatabase, tokenManager tokenService.TokenManager, refreshTokenTTL time.Duration, accessTokenTTL time.Duration) *UsersService {
 	return &UsersService{repos: repos, tokenManager: tokenManager, refreshTokenTTL: refreshTokenTTL, accessTokenTTL: accessTokenTTL}
 }
+func (u *UsersService) UpdatePassword(ctx context.Context, name string, password string) error {
+	return u.repos.UpdatePassword(ctx, name, password)
+}
 func (u *UsersService) GetUserID(ctx context.Context, username string) (int, error) {
 	return u.repos.GetUserID(ctx, username)
 }
@@ -38,7 +42,11 @@ func (u *UsersService) GetUser(ctx context.Context, username string) (*entity.Us
 	return u.repos.GetUser(ctx, username)
 }
 func (u *UsersService) GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error) {
-	return u.repos.GetSlavesList(ctx, masterUsername, slaveRole)
+	userID, err := u.GetUserID(ctx, masterUsername)
+	if err != nil {
+		return nil, err
+	}
+	return u.repos.GetSlavesList(ctx, userID, slaveRole)
 }
 
 func (u *UsersService) IsUserSessionValid(ctx context.Context, username string, role int) (bool, error) {

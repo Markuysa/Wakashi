@@ -61,9 +61,9 @@ func main() {
 	transactionService := service.NewTransactionsService(transactionsDB, userService)
 	adminService := service.NewAdministratorService(userService, cardsService, relationService, transactionService)
 	shogunService := service.NewShogunService(userService, cardsService)
-	daimyoService := service.NewDaimyoService(cardsService, userService, relationService)
-	samuraiService := service.NewSamuraiService(relationService, cardsService)
-	collectorService := service.NewCollectorService(cardsService)
+	daimyoService := service.NewDaimyoService(cardsService, userService, relationService, transactionService)
+	samuraiService := service.NewSamuraiService(relationService, cardsService, userService)
+	collectorService := service.NewCollectorService(cardsService, transactionService)
 
 	// CONTROLLERS - HANDLERS
 	msgListener := controllers.NewFetcherWorker(botClient)
@@ -84,7 +84,7 @@ func main() {
 	// WORKERS
 	msgListenerWorker := worker.NewMessageListenerWorker(msgListener, msgHandler)
 
-	// START THE AUTHENTICATION SERVER
+	// Start auth server
 	authServer := server.NewAuthSerer(AuthServerPort, sessionsDB, userService)
 	go func() {
 		err := authServer.Start()

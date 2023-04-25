@@ -19,6 +19,7 @@ type TokenManager interface {
 	ParseToken(ctx context.Context, tokenString, username string, role int) (bool, error)
 	SetCurrentActiveUser(ctx context.Context, username string) error
 	ResetUserSession(ctx context.Context, username string) error
+	IsTokenValid(ctx context.Context, token, username string) (bool, error)
 }
 
 type Tokens struct {
@@ -28,6 +29,19 @@ type Tokens struct {
 
 type TokenService struct {
 	TokenRepository database.TokenRepos
+}
+
+func (s *TokenService) IsTokenValid(ctx context.Context, token, username string) (bool, error) {
+
+	tokenEntry, err := s.TokenRepository.Get(ctx, username)
+	if err != nil {
+		return false, errors.New("No user with that username: " + username)
+	}
+	if tokenEntry.AccessToken == token {
+		return true, nil
+	}
+	return false, errors.New("invalid token: " + token)
+
 }
 
 func (s *TokenService) ResetUserSession(ctx context.Context, username string) error {

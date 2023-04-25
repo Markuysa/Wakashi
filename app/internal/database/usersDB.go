@@ -13,8 +13,9 @@ type UsersDatabase interface {
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserRoleID(ctx context.Context, username string) (int, error)
 	IsExist(ctx context.Context, username, password string) (*entity.User, error)
-	GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error)
+	GetSlavesList(ctx context.Context, masterID int, slaveRoleID int) ([]entity.User, error)
 	GetUserID(ctx context.Context, username string) (int, error)
+	UpdatePassword(ctx context.Context, name string, password string) error
 }
 type UsersRepository struct {
 	db *pgxpool.Pool
@@ -24,6 +25,22 @@ func NewUsersDB(db *pgxpool.Pool) *UsersRepository {
 	return &UsersRepository{db: db}
 }
 
+func (db *UsersRepository) UpdatePassword(ctx context.Context, name string, password string) error {
+	hashPassword, err := encoder.Encode(password)
+	if err != nil {
+		return err
+	}
+	query := `
+	update users 
+	set password=$1
+	where username=$2
+`
+	_, err = db.db.Query(ctx, query, hashPassword, name)
+	if err != nil {
+		return errors.New("failed to reset your password")
+	}
+	return nil
+}
 func (db *UsersRepository) GetUserID(ctx context.Context, username string) (int, error) {
 	query := `
 		select id from users
@@ -37,13 +54,13 @@ func (db *UsersRepository) GetUserID(ctx context.Context, username string) (int,
 	return userID, nil
 }
 
-func (u *UsersRepository) GetSlavesList(ctx context.Context, masterUsername string, slaveRoleID int) ([]entity.User, error) {
+func (u *UsersRepository) GetSlavesList(ctx context.Context, masterID int, slaveRoleID int) ([]entity.User, error) {
 	query := `
-	select username,role,password from users 
-	inner join relation r on users.id = r.slave_id
-	where users.role=$1 and users.id=$2
+	select username,role,password from users u
+	inner join relation r on u.id = r.slave_id
+	where r.master_id=$1 and u.role=$2
 `
-	rows, err := u.db.Query(ctx, query, slaveRoleID, masterUsername)
+	rows, err := u.db.Query(ctx, query, masterID, slaveRoleID)
 	if err != nil {
 		return nil, errors.New("failed to get daimyo list:%v", err)
 	}

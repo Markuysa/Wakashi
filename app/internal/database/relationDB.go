@@ -8,6 +8,7 @@ import (
 
 type RelationDatabase interface {
 	BindEntities(ctx context.Context, master, slave int) error
+	GetMasterUsername(ctx context.Context, slaveID int) (string, error)
 }
 type RelationRepository struct {
 	db *pgxpool.Pool
@@ -15,6 +16,18 @@ type RelationRepository struct {
 
 func NewRelationDB(db *pgxpool.Pool) *RelationRepository {
 	return &RelationRepository{db: db}
+}
+func (db *RelationRepository) GetMasterUsername(ctx context.Context, slaveID int) (string, error) {
+	query := `
+	select username from users inner join relation r on users.id=r.master_id
+	where r.slave_id=$1
+`
+	var username string
+	err := db.db.QueryRow(ctx, query, slaveID).Scan(&username)
+	if err != nil {
+		return "", err
+	}
+	return username, nil
 }
 func (db *RelationRepository) BindEntities(ctx context.Context, master, slave int) error {
 	query := `

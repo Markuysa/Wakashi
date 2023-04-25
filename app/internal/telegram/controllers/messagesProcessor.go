@@ -8,6 +8,7 @@ import (
 	"tgBotIntern/app/internal/constants/roles"
 	"tgBotIntern/app/internal/service"
 	"tgBotIntern/app/internal/telegram/bot"
+	"tgBotIntern/app/internal/telegram/helpers"
 	"tgBotIntern/app/internal/ui/messages"
 	"tgBotIntern/app/pkg/auth/service/tokenService"
 	"tgBotIntern/app/pkg/auth/service/usersService"
@@ -16,7 +17,7 @@ import (
 type MessageHandler struct {
 	tgClient           *bot.TgClientWrapper
 	usersService       usersService.UsersRepositoryService
-	tokenRepos         tokenService.TokenManager
+	tokenService       tokenService.TokenManager
 	adminService       service.AdministratorRights
 	shogunService      service.ShogunRights
 	daimyoService      service.DaimyoRights
@@ -40,7 +41,7 @@ func NewMessageHandler(tgClient *bot.TgClientWrapper,
 	transactionService service.TransactionProcessor) *MessageHandler {
 	return &MessageHandler{tgClient: tgClient,
 		usersService:       usersService,
-		tokenRepos:         tokenRepos,
+		tokenService:       tokenRepos,
 		adminService:       adminService,
 		shogunService:      shogunService,
 		daimyoService:      daimyoService,
@@ -81,50 +82,71 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 
 	// Administrator commands
 	case "admin_createEntity":
-		return h.handleAdminCreateEntity(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleAdminCreateEntity, roles.Administrator)(ctx, msg, message)
 	case "admin_createCard":
-		return h.handleAdminCreateCard(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleAdminCreateCard, roles.Administrator)(ctx, msg, message)
 	case "admin_bindSlave":
-		return h.handleAdminBindSlave(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleAdminBindSlave, roles.Administrator)(ctx, msg, message)
 	case "admin_bindCard":
-		return h.handleAdminBindCardToDaimyo(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleAdminBindCardToDaimyo, roles.Administrator)(ctx, msg, message)
 	case "admin_entityData":
-		return h.handleAdminEntityData(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleAdminEntityData, roles.Administrator)(ctx, msg, message)
 
 	// Shogun commands
 	case "shogun_getSlavesList":
-		return h.handleShogunGetSlavesList(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleShogunGetDaimyoSlavesList, roles.Shogun)(ctx, msg, message)
 	case "shogun_createCard":
-		return h.handleShogunCreateCard(ctx, msg, message)
-	case "shogun_bindCardToSamurai":
-		return h.handleShogunBindCardToSamurai(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleShogunCreateCard, roles.Shogun)(ctx, msg, message)
 	case "shogun_getSlavesData":
-		return h.handleShogunGetSlavesData(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleShogunGetSamuraiSlaveData, roles.Shogun)(ctx, msg, message)
 
 	// Daimyo commands
 	case "daimyo_getCards":
-		return h.handleDaimyoGetCards(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleDaimyoGetCards, roles.Daimyo)(ctx, msg, message)
 	case "daimyo_increase":
-		return h.handleIncCardRequest(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleIncCardRequest, roles.Daimyo)(ctx, msg, message)
 	case "daimyo_getSamurai":
-		return h.handleDaimyoGetSamurai(ctx, msg, message)
-	case "daimyo_getTotal":
-		return h.handleDaimyoGetTotal(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleDaimyoGetSamurai, roles.Daimyo)(ctx, msg, message)
+	case "daimyo_getTurnover":
+		return h.checkRoleMiddleware(h.handleDaimyoGetSamuraiTurnover, roles.Daimyo)(ctx, msg, message)
+	case "daimyo_getCardsTotal":
+		return h.checkRoleMiddleware(h.handleDaimyoGetCardsTotal, roles.Daimyo)(ctx, msg, message)
 	case "daimyo_bindShogun":
-		return h.handleDaimyoBindShogun(ctx, msg, message)
-	// Samurai commands
+		return h.checkRoleMiddleware(h.handleDaimyoBindShogun, roles.Daimyo)(ctx, msg, message)
+		// Samurai commands
 	case "samurai_getTurnover":
-		return h.handleSamuraiGetTurnover(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleSamuraiGetTurnover, roles.Samurai)(ctx, msg, message)
 	case "samurai_bindDaimyo":
-		return h.handleSamuraiBindDaimyo(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleSamuraiBindDaimyo, roles.Samurai)(ctx, msg, message)
 	// Collector commands
 	case "collector_performInc":
-		return h.handleCollectorIncreaseCard(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleCollectorIncreaseCard, roles.Collector)(ctx, msg, message)
+	case "collector_showTransactions":
+		return h.checkRoleMiddleware(h.handleCollectorGetTransactions, roles.Collector)(ctx, msg, message)
 	default:
-		return h.handleDefaultCommands(ctx, msg, message)
+		return h.handleDefaultCommands(msg)
 	}
 }
 
+// checkRoleMiddleware is a decorator to check user role before call the function
+func (h *MessageHandler) checkRoleMiddleware(next func(context.Context, tgbotapi.MessageConfig, *tgbotapi.Message) error,
+	roleID int) func(context.Context, tgbotapi.MessageConfig, *tgbotapi.Message) error {
+	return func(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+		isValid, err := h.usersService.IsUserSessionValid(ctx, message.From.UserName, roleID)
+		if err != nil {
+			msg.Text = "failed to get your status!"
+			return h.SendMessage(msg)
+		}
+		if isValid {
+			return next(ctx, msg, message)
+		} else {
+			msg.Text = "You don't have rights to call this endpoint!"
+			return h.SendMessage(msg)
+		}
+	}
+}
+
+// handleRegister handles /register ... command
 func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
 	if len(params) != 2 {
@@ -143,6 +165,8 @@ func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.Messag
 	msg.Text = "Successfully registered!"
 	return h.SendMessage(msg)
 }
+
+// handleLogin /login ... command
 func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
 	if len(params) != 1 {
@@ -151,18 +175,19 @@ func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageCo
 	}
 	username := message.From.UserName
 	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	//role, _ := h.usersService.GetRoleID(ctx, username)
+	role, _ := h.usersService.GetRoleID(ctx, username)
 	tokens, err := h.usersService.AuthorizeUser(ctx, username, password)
 	if err != nil {
 		msg.Text = "failed to authorize:" + err.Error()
 		return h.SendMessage(msg)
 	}
 	msg.Text = "Successfully authorized! Your access token:" + tokens.AccessToken
-	//msg.ReplyMarkup = helpers.GetKeyboard(role)
+	msg.ReplyMarkup = helpers.GetKeyboard(role)
 	return h.SendMessage(msg)
 }
+
 func (h *MessageHandler) handleExit(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
-	err := h.tokenRepos.ResetUserSession(ctx, message.From.UserName)
+	err := h.tokenService.ResetUserSession(ctx, message.From.UserName)
 	if err != nil {
 		msg.Text = "failed to exit: " + err.Error()
 		return h.SendMessage(msg)
@@ -170,45 +195,136 @@ func (h *MessageHandler) handleExit(ctx context.Context, msg tgbotapi.MessageCon
 	msg.Text = "Successfully exited."
 	return h.SendMessage(msg)
 }
+
 func (h *MessageHandler) handleStatus(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
-	isValid, err := h.usersService.IsUserSessionValid(ctx, message.From.UserName, roles.Administrator)
+	_, err := h.tokenService.GetUserSession(ctx, message.From.UserName)
 	if err != nil {
-		msg.Text = "failed to get your status!"
+		msg.Text = "You should authorize first"
 		return h.SendMessage(msg)
 	}
-	if isValid {
-		user, err := h.usersService.GetUser(ctx, message.From.UserName)
-		if err != nil {
-			msg.Text = "failed to get your data!"
-			return h.SendMessage(msg)
-		}
-		msg.Text = fmt.Sprintf(`
+	user, err := h.usersService.GetUser(ctx, message.From.UserName)
+	if err != nil {
+		msg.Text = "failed to get your data!"
+		return h.SendMessage(msg)
+	}
+	msg.Text = fmt.Sprintf(`
 			Username: %v, 
 			Role: %v,
 		`, user.Username, roles.GetRoleString(user.Role))
-		return h.SendMessage(msg)
-	}
-	msg.Text = "You don't have enough rights to use that command!"
 	return h.SendMessage(msg)
 }
-func (h *MessageHandler) handleDefaultCommands(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+
+func (h *MessageHandler) handleResetPassword(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+	params := strings.Split(message.Text, " ")[1:]
+	if len(params) != 1 {
+		msg.Text = "not enough arguments in create entity command"
+		return h.SendMessage(msg)
+	}
+	token := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	newPassword := strings.TrimSpace(strings.Split(params[2], "=")[1])
+	if len(token) == 0 {
+		msg.Text = "Type your token!"
+		return h.SendMessage(msg)
+	}
+	isValid, err := h.tokenService.IsTokenValid(ctx, token, message.From.UserName)
+	if err != nil {
+		msg.Text = err.Error()
+		return h.SendMessage(msg)
+	}
+	if isValid {
+		err := h.usersService.UpdatePassword(ctx, message.From.UserName, newPassword)
+		if err != nil {
+			msg.Text = "Failed to reset your password, try later."
+			return h.SendMessage(msg)
+		}
+		msg.Text = "Successfully updated your password!"
+		return h.SendMessage(msg)
+	} else {
+		msg.Text = "Incorrect token!"
+		return h.SendMessage(msg)
+	}
+}
+func (h *MessageHandler) handleDefaultCommands(msg tgbotapi.MessageConfig) error {
 	switch msg.Text {
-	case "create entity":
+	// Admin buttons handlers
+	case helpers.AdminCreateEntity:
 		{
 			msg.Text = messages.AdminDoc_createEntity
-			return h.SendMessage(msg)
 		}
-	case "create card":
+	case helpers.AdminCreateCard:
 		{
 			msg.Text = messages.AdminDoc_createCard
-			return h.SendMessage(msg)
 		}
-	case "bind slave to master":
+	case helpers.AdminBindSlaveToMaster:
 		{
 			msg.Text = messages.AdminDoc_bindSlave
-			return h.SendMessage(msg)
+		}
+	case helpers.AdminVBindCardToDaimyo:
+		{
+			msg.Text = messages.AdminDoc_bindCardToDaimyo
+		}
+	case helpers.AdminGetEntityData:
+		{
+			msg.Text = messages.AdminDoc_getEntityData
+		}
+		// Shogun buttons handlers
+	case helpers.ShogunGetSlavesList:
+		{
+			msg.Text = messages.ShodunDoc_getSlavesList
+		}
+	case helpers.ShogunCreateCard:
+		{
+			msg.Text = messages.ShodunDoc_createCard
+		}
+	case helpers.ShogunGetSlaveData:
+		{
+			msg.Text = messages.ShodunDoc_getSlavesData
+		}
+		// Daimyo buttons handlers
+	case helpers.DaimyoGetCards:
+		{
+			msg.Text = messages.DaimyoDoc_getCards
+		}
+	case helpers.DaimyoCreateCardRequest:
+		{
+			msg.Text = messages.DaimyoDoc_increase
+		}
+	case helpers.DaimyoGetSamuraiList:
+		{
+			msg.Text = messages.DaimyoDoc_getSamurai
+		}
+	case helpers.DaimyoGetSamuraiTurnover:
+		{
+			msg.Text = messages.DaimyoDoc_getTurnover
+		}
+	case helpers.DaimyoGetCardsTotal:
+		{
+			msg.Text = messages.DaimyoDoc_getCardsTotal
+		}
+	case helpers.DaimyoBindShogun:
+		{
+			msg.Text = messages.DaimyoDoc_bindShogun
+		}
+		// Samurai buttons handlers
+	case helpers.SamuraiGetTurnover:
+		{
+			msg.Text = messages.SamuraiDoc_getTurnover
+		}
+
+	case helpers.SamuraiBindDaimyo:
+		{
+			msg.Text = messages.SamuraiDoc_bindDaimyo
+		}
+
+	case helpers.CollectorProccessRequest:
+		{
+			msg.Text = messages.CollectorDoc_performInc
+		}
+
+	case helpers.CollectorShowTransactions:
+		{
+			msg.Text = messages.CollectorDoc_showTranasctions
 		}
 	}
-	// TODO finish cases
 	return h.SendMessage(msg)
 }

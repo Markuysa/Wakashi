@@ -21,6 +21,7 @@ func NewShogunService(usersService usersService.UsersRepositoryService, cardServ
 	return &ShogunService{usersService: usersService, cardService: cardService}
 }
 
+// Add some validation
 func (s *ShogunService) GetSlavesList(ctx context.Context, masterUsername string, slaveRole int) ([]entity.User, error) {
 	return s.usersService.GetSlavesList(ctx, masterUsername, slaveRole)
 }
