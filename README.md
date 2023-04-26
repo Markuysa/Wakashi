@@ -33,7 +33,7 @@
     <li><code>/exit</code>- to log out</li>
     <ul>You can also login using a web page. Just type "Login" to bot, or press Login button in /start panel and click on the Login link, don't forget to save your token (you can use it to reset the password)</ul>
 
-![img.png.png](app/internal/ui/img.png)
+![img.png.png](app/internal/ui/image_2023-04-26_122826176.png)
 <hr>
 Admin commands
 <li><code>/admin_createCard number=4567344598433456 bank_id=1481 owner=tgUsername cvv=123</code> - create card</li>
