@@ -73,6 +73,7 @@ func (s *DaimyoService) CreateCardIncreasementRequest(ctx context.Context, cardI
 		OperationValue:  increasementValue,
 		TransactionDate: time.Now(),
 		Status:          false,
+		RequestFromID:   userID,
 	})
 }
 

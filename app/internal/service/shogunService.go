@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"tgBotIntern/app/internal/entity"
 	"tgBotIntern/app/pkg/auth/service/usersService"
 )
@@ -30,6 +31,11 @@ func (s *ShogunService) GetSlavesList(ctx context.Context, masterUsername string
 	return s.usersService.GetSlavesList(ctx, masterUsername, slaveRole)
 }
 func (s *ShogunService) CreateCard(ctx context.Context, card entity.Card) error {
+	// ignore the error because it appears when the card with that card_number doesnt exist
+	cardExists, _ := s.cardService.GetCard(ctx, int(card.CardNumber))
+	if cardExists != nil {
+		return errors.New("card with that card_number already exists")
+	}
 	return s.cardService.CreateCard(ctx, card)
 }
 func (s *ShogunService) BindCardToDaimyo(ctx context.Context, cardNumber string, daimyoUsername string) error {

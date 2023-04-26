@@ -11,8 +11,8 @@ import (
 )
 
 type UsersRepositoryService interface {
-	RegisterUser(ctx context.Context, username, password string, roleID int) error
-	AuthorizeUser(ctx context.Context, username, password string) (tokenService.Tokens, error)
+	RegisterUser(ctx context.Context, username, nickname, password string, roleID int) error
+	AuthorizeUser(ctx context.Context, username, nickname, password string) (tokenService.Tokens, error)
 	GetRoleID(ctx context.Context, username string) (int, error)
 	CreateUserSession(ctx context.Context, username string, roleID int) (tokenService.Tokens, error)
 	IsUserSessionValid(ctx context.Context, username string, roleID int) (bool, error)
@@ -86,8 +86,8 @@ func (u *UsersService) CreateUserSession(ctx context.Context, username string, r
 	return res, nil
 }
 
-func (u *UsersService) AuthorizeUser(ctx context.Context, username, password string) (tokenService.Tokens, error) {
-	user, err := u.repos.IsExist(ctx, username, password)
+func (u *UsersService) AuthorizeUser(ctx context.Context, username, nickname, password string) (tokenService.Tokens, error) {
+	user, err := u.repos.IsExist(ctx, username, nickname, password)
 	if err != nil {
 		return tokenService.Tokens{}, err
 	}
@@ -97,7 +97,7 @@ func (u *UsersService) AuthorizeUser(ctx context.Context, username, password str
 func (u *UsersService) GetRoleID(ctx context.Context, username string) (int, error) {
 	return u.repos.GetUserRoleID(ctx, username)
 }
-func (u *UsersService) RegisterUser(ctx context.Context, username, password string, roleID int) error {
+func (u *UsersService) RegisterUser(ctx context.Context, username, nickname, password string, roleID int) error {
 	user, err := u.repos.GetUser(ctx, username)
 	if user != nil {
 		return errors.New("user already exists")
@@ -105,7 +105,7 @@ func (u *UsersService) RegisterUser(ctx context.Context, username, password stri
 	if roleID == -1 {
 		return errors.New("error with role: not found")
 	}
-	err = u.repos.AddUser(ctx, password, username, roleID)
+	err = u.repos.AddUser(ctx, password, username, nickname, roleID)
 	if err != nil {
 		return errors.New("failed to register user:%v", err)
 	}

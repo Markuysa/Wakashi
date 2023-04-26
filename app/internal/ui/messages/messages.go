@@ -6,13 +6,13 @@ const (
 `
 	LoginMessage = `
 	To login you should use command:
-	/login password=your_password
+	/login nickname=... password=your_password
 	You can also use our web-site to authorize, just follow the link:
 	<a href="http://127.0.0.1:8080/login">Login</a>
 `
 	RegisterMessage = `
 	To register you should use command:
-	/register password=your_password role=your_role
+	/register nickname=... password=.. role=..
 `
 	ResetMessage = `
 	If you forgot your password you should use the token, that 
@@ -31,8 +31,9 @@ const (
 			⭐ Samurai - binds to one Daimyo and performs some useful actions
 			⭐ Collector - handles daimyo card requests
 		🔐 To start the game you should register then authorize 
-		To register use the endpoint: /register password=.. role=..
-		To login user the endpoint: /login  password=..
+		To register use the endpoint: /register nickname=... password=.. role=..
+		To login user the endpoint: /login  nickname=... password=..
+		Notice, that you can have only 1 account in telegram!
 		Sya!👋
 `
 	// Admin
@@ -132,13 +133,13 @@ const (
 	CollectorDoc_performInc = `
 	To handle daimyo increment request you should know the unique id of 
 	transaction.
-	To get it you can use /collector_showTranasctions method and see	
+	To get it you can use /collector_showTransactions method and see	
 	all active transactions.
 	Example: /collector_performInc id=3
 	id is a positive number.
 `
 	CollectorDoc_showTranasctions = `
-	To get it you can use /collector_showTranasctions method and see	
+	To get it you can use /collector_showTransactions method and see	
 	all active transactions.
 `
 )

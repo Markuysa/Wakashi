@@ -49,8 +49,8 @@ func FormTransactions(transactions []entity.Transaction) string {
 }
 func FormUser(user *entity.User) string {
 	return fmt.Sprintf(
-		"\nUsername:%s\nRole:%s\n",
-		user.Username, roles.GetRoleString(user.Role),
+		"\nUsername:%s\nNickname:%s\nRole:%s\n",
+		user.Username, user.Nickname, roles.GetRoleString(user.Role),
 	)
 }
 func FormCardsList(cards []entity.Card) string {

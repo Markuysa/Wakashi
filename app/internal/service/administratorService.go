@@ -35,7 +35,7 @@ func NewAdministratorService(usersService usersService.UsersRepositoryService, c
 }
 
 func (a *AdministratorService) CreateEntity(ctx context.Context, user entity.User) error {
-	return a.usersService.RegisterUser(ctx, user.Username, user.Password, user.Role)
+	return a.usersService.RegisterUser(ctx, user.Username, user.Nickname, user.Password, user.Role)
 }
 
 func (a *AdministratorService) CreateCard(ctx context.Context, card entity.Card) error {
@@ -58,13 +58,13 @@ func (a *AdministratorService) GetEntityReport(ctx context.Context, userName str
 	case roles.Administrator:
 		{
 			return entity.NewReport(
-				user.Username, user.Role, []entity.Transaction{},
+				user.Username, user.Nickname, user.Role, []entity.Transaction{},
 			), nil
 		}
 	case roles.Shogun:
 		{
 			return entity.NewReport(
-				user.Username, user.Role, []entity.Transaction{},
+				user.Username, user.Nickname, user.Role, []entity.Transaction{},
 			), nil
 		}
 	case roles.Daimyo:
@@ -74,7 +74,7 @@ func (a *AdministratorService) GetEntityReport(ctx context.Context, userName str
 				return nil, err
 			}
 			return entity.NewReport(
-				user.Username, user.Role, transactionsList,
+				user.Username, user.Nickname, user.Role, transactionsList,
 			), nil
 		}
 	case roles.Samurai:
@@ -84,7 +84,16 @@ func (a *AdministratorService) GetEntityReport(ctx context.Context, userName str
 				return nil, err
 			}
 			return entity.NewReport(
-				user.Username, user.Role, transactionsList,
+				user.Username, user.Nickname, user.Role, transactionsList,
+			), nil
+		}
+	case roles.Collector:
+		{
+			if err != nil {
+				return nil, err
+			}
+			return entity.NewReport(
+				user.Username, user.Nickname, user.Role, []entity.Transaction{},
 			), nil
 		}
 	default:

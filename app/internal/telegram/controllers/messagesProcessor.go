@@ -112,7 +112,7 @@ func (h *MessageHandler) HandleIncomingMessage(ctx context.Context, message *tgb
 	case "shogun_createCard":
 		return h.checkRoleMiddleware(h.handleShogunCreateCard, roles.Shogun)(ctx, msg, message)
 	case "shogun_getSlavesData":
-		return h.checkRoleMiddleware(h.handleShogunGetSamuraiSlaveData, roles.Shogun)(ctx, msg, message)
+		return h.checkRoleMiddleware(h.handleShogunGetSlaveData, roles.Shogun)(ctx, msg, message)
 
 	// Daimyo commands
 	case "daimyo_getCards":
@@ -180,15 +180,20 @@ func (h *MessageHandler) checkRoleMiddleware(next func(context.Context, tgbotapi
 // handleRegister handles /register ... command
 func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
-	if len(params) != 2 {
+	if len(params) != 3 {
 		msg.Text = "not enough arguments in register command"
 		return h.SendMessage(msg)
 	}
 	username := message.From.UserName
-	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	role := strings.TrimSpace(strings.Split(params[1], "=")[1])
+	nickname := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	password := strings.TrimSpace(strings.Split(params[1], "=")[1])
+	role := strings.TrimSpace(strings.Split(params[2], "=")[1])
+	if len(username)*len(password)*len(role) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	roleID := roles.GetRoleID(role)
-	err := h.usersService.RegisterUser(ctx, username, password, roleID)
+	err := h.usersService.RegisterUser(ctx, username, nickname, password, roleID)
 	if err != nil {
 		msg.Text = "unable to register user:" + err.Error()
 		return h.SendMessage(msg)
@@ -200,25 +205,34 @@ func (h *MessageHandler) handleRegister(ctx context.Context, msg tgbotapi.Messag
 // handleLogin /login ... command
 func (h *MessageHandler) handleLogin(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
-	if len(params) != 1 {
-		msg.Text = "not enough arguments in register command"
+	if len(params) != 2 {
+		msg.Text = "not enough arguments in login command"
 		return h.SendMessage(msg)
 	}
 	username := message.From.UserName
+	if len(username) == 0 {
+		msg.Text = "Set your username is telegram settings to use our bot"
+		return h.SendMessage(msg)
+	}
 	// ignoring the error because it occurs when there is no user authorized
 	userSession, _ := h.tokenService.GetUserSession(ctx, username)
 	if userSession != nil {
 		msg.Text = "You already authorized"
 		return h.SendMessage(msg)
 	}
-	password := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	nickname := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	password := strings.TrimSpace(strings.Split(params[1], "=")[1])
+	if len(nickname)*len(password) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	role, _ := h.usersService.GetRoleID(ctx, username)
-	tokens, err := h.usersService.AuthorizeUser(ctx, username, password)
+	tokens, err := h.usersService.AuthorizeUser(ctx, username, nickname, password)
 	if err != nil {
 		msg.Text = "failed to authorize:" + err.Error()
 		return h.SendMessage(msg)
 	}
-	msg.Text = "Successfully authorized! Your access token:" + tokens.AccessToken
+	msg.Text = "Successfully authorized! " + nickname + ", Your access token:" + tokens.AccessToken
 	msg.ReplyMarkup = helpers.GetKeyboard(role)
 	return h.SendMessage(msg)
 }
@@ -246,10 +260,7 @@ func (h *MessageHandler) handleStatus(ctx context.Context, msg tgbotapi.MessageC
 		msg.Text = "failed to get your data!"
 		return h.SendMessage(msg)
 	}
-	msg.Text = fmt.Sprintf(`
-			Username: %v, 
-			Role: %v,
-		`, user.Username, roles.GetRoleString(user.Role))
+	msg.Text = helpers.FormUser(user)
 	return h.SendMessage(msg)
 }
 
@@ -257,11 +268,11 @@ func (h *MessageHandler) handleStatus(ctx context.Context, msg tgbotapi.MessageC
 func (h *MessageHandler) handleResetPassword(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
 	if len(params) != 2 {
-		msg.Text = "not enough arguments in create entity command"
+		msg.Text = "not enough arguments in reset command"
 		return h.SendMessage(msg)
 	}
 	token := strings.TrimSpace(strings.Split(params[0], "=")[1])
-	newPassword := strings.TrimSpace(strings.Split(params[2], "=")[1])
+	newPassword := strings.TrimSpace(strings.Split(params[1], "=")[1])
 	if len(token) == 0 {
 		msg.Text = "Type your token!"
 		return h.SendMessage(msg)

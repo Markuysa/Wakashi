@@ -17,6 +17,10 @@ func (h *MessageHandler) handleCollectorIncreaseCard(ctx context.Context, msg tg
 		return h.SendMessage(msg)
 	}
 	requestID := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	if len(requestID) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	requestIDInt, err := strconv.Atoi(requestID)
 	if err != nil {
 		msg.Text = "Check your requestID! It should be a number without literals"

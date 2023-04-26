@@ -18,13 +18,14 @@ import (
 // The GetUserID method is used to get identification of user with given username
 // THe UpdatePassword method is used to reset old password of user
 type UsersDatabase interface {
-	AddUser(ctx context.Context, password, username string, role int) error
+	AddUser(ctx context.Context, password, username, nickname string, role int) error
 	GetUser(ctx context.Context, username string) (*entity.User, error)
 	GetUserRoleID(ctx context.Context, username string) (int, error)
-	IsExist(ctx context.Context, username, password string) (*entity.User, error)
+	IsExist(ctx context.Context, username, nickname, password string) (*entity.User, error)
 	GetSlavesList(ctx context.Context, masterID int, slaveRoleID int) ([]entity.User, error)
 	GetUserID(ctx context.Context, username string) (int, error)
 	UpdatePassword(ctx context.Context, name string, password string) error
+	GetUserByNickname(ctx context.Context, username, nickname string) (*entity.User, error)
 }
 type UsersRepository struct {
 	db *pgxpool.Pool
@@ -33,7 +34,18 @@ type UsersRepository struct {
 func NewUsersDB(db *pgxpool.Pool) *UsersRepository {
 	return &UsersRepository{db: db}
 }
-
+func (db *UsersRepository) GetUserByNickname(ctx context.Context, username, nickname string) (*entity.User, error) {
+	query := `
+		select username,nickname,password,role from users
+		where username=$1 and nickname=$2
+`
+	var user entity.User
+	row := db.db.QueryRow(ctx, query, username, nickname)
+	if err := row.Scan(&user.Username, &user.Nickname, &user.Password, &user.Role); err != nil {
+		return nil, errors.New("failed getting user:%v", err)
+	}
+	return &user, nil
+}
 func (db *UsersRepository) UpdatePassword(ctx context.Context, name string, password string) error {
 	hashPassword, err := encoder.Encode(password)
 	if err != nil {
@@ -65,7 +77,7 @@ func (db *UsersRepository) GetUserID(ctx context.Context, username string) (int,
 
 func (u *UsersRepository) GetSlavesList(ctx context.Context, masterID int, slaveRoleID int) ([]entity.User, error) {
 	query := `
-	select username,role,password from users u
+	select username,nickname,role,password from users u
 	inner join relation r on u.id = r.slave_id
 	where r.master_id=$1 and u.role=$2
 `
@@ -76,7 +88,7 @@ func (u *UsersRepository) GetSlavesList(ctx context.Context, masterID int, slave
 	var users []entity.User
 	for rows.Next() {
 		var user entity.User
-		if err := rows.Scan(&user.Username, &user.Role, &user.Password); err != nil {
+		if err := rows.Scan(&user.Username, &user.Nickname, &user.Role, &user.Password); err != nil {
 			return nil, errors.New("failed to scan daimyo:%v", err)
 		}
 		users = append(users, user)
@@ -85,15 +97,16 @@ func (u *UsersRepository) GetSlavesList(ctx context.Context, masterID int, slave
 }
 
 // AddUser method creates new entry in the users table of the database
-func (db *UsersRepository) AddUser(ctx context.Context, password, username string, role int) error {
+func (db *UsersRepository) AddUser(ctx context.Context, password, username, nickname string, role int) error {
 
 	query := `
 		insert into users(
 			username,
+			nickname,
 			password,
 			role
 		)values (
-				 $1,$2,$3
+				 $1,$2,$3,$4
 		)
 	`
 	password, err := encoder.Encode(password)
@@ -102,6 +115,7 @@ func (db *UsersRepository) AddUser(ctx context.Context, password, username strin
 	}
 	_, err = db.db.Query(ctx, query,
 		username,
+		nickname,
 		password,
 		role,
 	)
@@ -115,12 +129,12 @@ func (db *UsersRepository) AddUser(ctx context.Context, password, username strin
 func (db *UsersRepository) GetUser(ctx context.Context, username string) (*entity.User, error) {
 
 	query := `
-		select username,password,role from users
+		select username,nickname,password,role from users
 		where username=$1
 `
 	var user entity.User
 	row := db.db.QueryRow(ctx, query, username)
-	if err := row.Scan(&user.Username, &user.Password, &user.Role); err != nil {
+	if err := row.Scan(&user.Username, &user.Nickname, &user.Password, &user.Role); err != nil {
 		return nil, errors.New("failed getting user:%v", err)
 	}
 	return &user, nil
@@ -147,10 +161,10 @@ func (db *UsersRepository) GetUserRoleID(ctx context.Context, username string) (
 	return role, nil
 }
 
-func (db *UsersRepository) IsExist(ctx context.Context, username, password string) (*entity.User, error) {
-	user, err := db.GetUser(ctx, username)
+func (db *UsersRepository) IsExist(ctx context.Context, username, nickname, password string) (*entity.User, error) {
+	user, err := db.GetUserByNickname(ctx, username, nickname)
 	if err != nil {
-		return nil, errors.New(" incorrect username")
+		return nil, errors.New(" incorrect nickname or unregistered")
 	}
 	matches, err := encoder.IsMatch(user.Password, password)
 	if err != nil {

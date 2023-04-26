@@ -2,10 +2,7 @@ package entity
 
 type User struct {
 	Username string `json:"Username"`
+	Nickname string `json:"nickname"`
 	Password string `json:"password"`
 	Role     int    `json:"role"`
-}
-
-func NewUser(username string, password string, role int) *User {
-	return &User{Username: username, Password: password, Role: role}
 }

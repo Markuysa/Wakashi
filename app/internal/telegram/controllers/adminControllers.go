@@ -23,6 +23,10 @@ func (h *MessageHandler) handleAdminCreateEntity(ctx context.Context, msg tgbota
 	username := strings.TrimSpace(strings.Split(params[0], "=")[1])
 	password := strings.TrimSpace(strings.Split(params[1], "=")[1])
 	role := strings.TrimSpace(strings.Split(params[2], "=")[1])
+	if len(username)*len(password)*len(role) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	roleID := roles.GetRoleID(role)
 	err := h.adminService.CreateEntity(ctx, entity.User{
 		Username: username,
@@ -50,7 +54,15 @@ func (h *MessageHandler) handleAdminCreateCard(ctx context.Context, msg tgbotapi
 	}
 	bank := strings.TrimSpace(strings.Split(params[1], "=")[1])
 	owner := strings.TrimSpace(strings.Split(params[2], "=")[1])
+	if len(bank)*len(owner) == 0 {
+		msg.Text = "Length of cvv parameter should be 3"
+		return h.SendMessage(msg)
+	}
 	cvv := strings.TrimSpace(strings.Split(params[3], "=")[1])
+	if len(cvv) != 3 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	numberInt, err := strconv.Atoi(number)
 	if err != nil {
 		msg.Text = "The card number should contain only digits without spaces in between!"
@@ -158,6 +170,10 @@ func (h *MessageHandler) handleAdminEntityData(ctx context.Context, msg tgbotapi
 		return h.SendMessage(msg)
 	}
 	username := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	if len(username) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	report, err := h.adminService.GetEntityReport(ctx, username)
 	if err != nil {
 		msg.Text = "Failed to create report"

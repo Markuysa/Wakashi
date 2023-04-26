@@ -71,7 +71,8 @@
     <h1>Register</h1>
     <label for="username">Username:</label>
     <input type="text" id="username" name="username">
-
+    <label for="username">Nickname:</label>
+    <input type="text" id="nickname" name="nickname">
     <label for="password">Password:</label>
     <input type="password" id="password" name="password">
     <div id="error-message"></div>
@@ -82,11 +83,15 @@
     function validateForm() {
         var username = document.getElementById('username').value;
         var password = document.getElementById('password').value;
+        var nickname = document.getElementById('nickname').value;
         if (username == "") {
             document.getElementById('error-message').innerHTML = "Please enter your username";
             return false;
         }
-
+        if (nickname == "") {
+            document.getElementById('error-message').innerHTML = "Please enter your nickname";
+            return false;
+        }
         if (password == "") {
             document.getElementById('error-message').innerHTML = "Please enter your password";
             return false;
@@ -97,9 +102,11 @@
     function wrongData(error){
         document.getElementById('error-message').innerHTML = "Some error occurred:"+error+".Check username and password";
         var username = document.getElementById('username');
+        var nickname = document.getElementById('nickname');
         var password = document.getElementById('password');
         username.value = ""
         password.value = ""
+        nickname.value = ""
     }
     function checkStatus(response){
 
@@ -114,9 +121,11 @@
         e.preventDefault()
         if (validateForm()){
             var username = document.getElementById('username').value;
+            var nickname = document.getElementById('nickname').value;
             var password = document.getElementById('password').value;
             const data = {
                 username: username,
+                nickname: nickname,
                 password: password,
             };
             url = "http://127.0.0.1:8080/login"

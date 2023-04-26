@@ -29,6 +29,14 @@ func (h *MessageHandler) handleIncCardRequest(ctx context.Context, msg tgbotapi.
 	}
 	cardNumber := strings.TrimSpace(strings.Split(params[0], "=")[1])
 	incValue := strings.TrimSpace(strings.Split(params[1], "=")[1])
+	if len(cardNumber) != 16 {
+		msg.Text = "Length of card number should be 16 digits"
+		return h.SendMessage(msg)
+	}
+	if len(incValue) == 0 {
+		msg.Text = "Length of increment value should be > 0!"
+		return h.SendMessage(msg)
+	}
 	cardNumberInt, err := strconv.Atoi(cardNumber)
 	if err != nil || len(cardNumber) != 16 {
 		msg.Text = "Check your cardNumber! It should be 16-digit number without spaces in between"
@@ -65,6 +73,10 @@ func (h *MessageHandler) handleDaimyoGetSamuraiTurnover(ctx context.Context, msg
 		return h.SendMessage(msg)
 	}
 	samuraiUsername := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	if len(samuraiUsername) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	turnover, err := h.daimyoService.GetSamuraiTurnover(ctx, message.From.UserName, samuraiUsername)
 	if err != nil {
 		msg.Text = err.Error()
@@ -94,6 +106,10 @@ func (h *MessageHandler) handleDaimyoBindShogun(ctx context.Context, msg tgbotap
 		return h.SendMessage(msg)
 	}
 	shogunUsername := strings.TrimSpace(strings.Split(params[0], "=")[1])
+	if len(shogunUsername) == 0 {
+		msg.Text = "Length of each parameter should be > 0!"
+		return h.SendMessage(msg)
+	}
 	err := h.daimyoService.BindShogun(ctx, shogunUsername, message.From.UserName)
 	if err != nil {
 		msg.Text = "Cannot bind to shogun"

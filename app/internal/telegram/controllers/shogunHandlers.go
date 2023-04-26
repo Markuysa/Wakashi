@@ -71,25 +71,32 @@ func (h *MessageHandler) handleShogunCreateCard(ctx context.Context, msg tgbotap
 	return h.SendMessage(msg)
 }
 
-func (h *MessageHandler) handleShogunGetSamuraiSlaveData(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
+func (h *MessageHandler) handleShogunGetSlaveData(ctx context.Context, msg tgbotapi.MessageConfig, message *tgbotapi.Message) error {
 	params := strings.Split(message.Text, " ")[1:]
 	if len(params) != 1 {
 		msg.Text = "not enough arguments in create card command"
 		return h.SendMessage(msg)
 	}
 	slaveUsername := strings.TrimSpace(strings.Split(params[0], "=")[1])
-
+	if len(slaveUsername) == 0 {
+		msg.Text = "not enough arguments in create card command"
+		return h.SendMessage(msg)
+	}
 	slave, err := h.usersService.GetUser(ctx, slaveUsername)
 	if err != nil {
 		msg.Text = "User with username: " + slave.Username + " not found"
 		return h.SendMessage(msg)
 	}
 	turnover, err := h.transactionService.GetTurnover(ctx, slave.Username)
+	if turnover == float64(0) {
+		msg.Text = helpers.FormUser(slave) + "Turnover is 0 according to current shift"
+		return h.SendMessage(msg)
+	}
 	s := strconv.FormatFloat(turnover, 'E', -1, 64)
 	if err != nil {
 		msg.Text = "Cannot calculate turnover of Samurai: " + slaveUsername
 		return h.SendMessage(msg)
 	}
-	msg.Text = helpers.FormUser(slave) + "\n" + s
+	msg.Text = helpers.FormUser(slave) + "The turnover is: " + s + ".RUB"
 	return h.SendMessage(msg)
 }

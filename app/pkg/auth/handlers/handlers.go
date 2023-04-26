@@ -39,7 +39,7 @@ func (t *TgBotAuth) HandleRegister(c *gin.Context) {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err := t.usersService.RegisterUser(c, user.Username, user.Password, user.Role)
+	err := t.usersService.RegisterUser(c, user.Username, user.Nickname, user.Password, user.Role)
 	if err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 	}
@@ -48,13 +48,14 @@ func (t *TgBotAuth) HandleRegister(c *gin.Context) {
 func (t *TgBotAuth) HandleLogin(c *gin.Context) {
 	var user struct {
 		Username string `json:"username"`
+		Nickname string `json:"nickname"`
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(c.Request.Body).Decode(&user); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
 		return
 	}
-	_, err := t.usersService.AuthorizeUser(c, user.Username, user.Password)
+	_, err := t.usersService.AuthorizeUser(c, user.Username, user.Nickname, user.Password)
 	if err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return

@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/joho/godotenv"
 	"gopkg.in/hedzr/errors.v3"
 	"log"
-	"os"
 	"tgBotIntern/app/internal/database"
 	"tgBotIntern/app/internal/database/config"
 	logger2 "tgBotIntern/app/internal/logger"
@@ -33,7 +31,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	fmt.Println(os.Getenv("tg_config_path"))
 	tgConfig, err := telegramConfig.New()
 	if err != nil {
 		log.Fatal(err)
